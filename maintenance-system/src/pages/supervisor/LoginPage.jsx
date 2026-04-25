@@ -88,7 +88,7 @@ export function SupervisorLoginPage() {
           <div className="mt-6 p-3 bg-slate-800/50 rounded-lg">
             <p className="text-xs text-slate-500 text-center">
               Credenciais de demonstração:<br />
-              <span className="text-slate-400">admin / manutencao2024</span>
+              <span className="text-slate-400">admin / admin</span>
             </p>
           </div>
         </CardContent>

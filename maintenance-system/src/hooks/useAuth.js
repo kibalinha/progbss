@@ -2,7 +2,7 @@ import { useApp } from '../context/AppContext'
 
 const VALID_CREDENTIALS = {
   username: 'admin',
-  password: 'manutencao2024'
+  password: 'admin'
 }
 
 export function useAuth() {
