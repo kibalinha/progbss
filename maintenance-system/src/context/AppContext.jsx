@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 
 const AppContext = createContext()
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_URL = '/api' // Vercel serverless functions
 
 export function AppProvider({ children }) {
   const [sectors, setSectors] = useState([])
@@ -19,6 +19,9 @@ export function AppProvider({ children }) {
   const loadAllData = async () => {
     try {
       setLoading(true)
+      // Initialize DB first
+      await fetch(`${API_URL}/init-db`)
+      
       const [sectorsRes, techsRes, actsRes] = await Promise.all([
         fetch(`${API_URL}/sectors`),
         fetch(`${API_URL}/technicians`),
@@ -64,7 +67,7 @@ export function AppProvider({ children }) {
 
   const removeSector = async (sector) => {
     try {
-      const res = await fetch(`${API_URL}/sectors/${encodeURIComponent(sector)}`, {
+      const res = await fetch(`${API_URL}/sectors?name=${encodeURIComponent(sector)}`, {
         method: 'DELETE'
       })
       if (res.ok) {
@@ -94,7 +97,7 @@ export function AppProvider({ children }) {
 
   const removeTechnician = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/technicians/${id}`, {
+      const res = await fetch(`${API_URL}/technicians?id=${id}`, {
         method: 'DELETE'
       })
       if (res.ok) {
@@ -124,7 +127,7 @@ export function AppProvider({ children }) {
 
   const removeActivity = async (id) => {
     try {
-      const res = await fetch(`${API_URL}/activities/${id}`, {
+      const res = await fetch(`${API_URL}/activities?id=${id}`, {
         method: 'DELETE'
       })
       if (res.ok) {
@@ -137,7 +140,7 @@ export function AppProvider({ children }) {
 
   const updateActivityStatus = async (id, status, notes) => {
     try {
-      const res = await fetch(`${API_URL}/activities/${id}`, {
+      const res = await fetch(`${API_URL}/activities?id=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, notes })
