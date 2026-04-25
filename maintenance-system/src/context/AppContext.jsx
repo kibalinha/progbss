@@ -1,92 +1,177 @@
-import { createContext, useContext, useReducer } from 'react'
-import { initialSectors, initialTechnicians, initialActivities } from '../data/initialData'
+import { createContext, useContext, useState, useEffect } from 'react'
 
 const AppContext = createContext()
-
-const initialState = {
-  sectors: initialSectors,
-  technicians: initialTechnicians,
-  activities: initialActivities,
-  currentUser: null
-}
-
-function appReducer(state, action) {
-  switch (action.type) {
-    case 'ADD_SECTOR':
-      if (state.sectors.includes(action.payload)) return state
-      return { ...state, sectors: [...state.sectors, action.payload] }
-    
-    case 'REMOVE_SECTOR':
-      return { 
-        ...state, 
-        sectors: state.sectors.filter(s => s !== action.payload),
-        technicians: state.technicians.filter(t => t.sector !== action.payload)
-      }
-    
-    case 'ADD_TECHNICIAN':
-      return { 
-        ...state, 
-        technicians: [...state.technicians, { ...action.payload, id: Date.now() }] 
-      }
-    
-    case 'REMOVE_TECHNICIAN':
-      return { 
-        ...state, 
-        technicians: state.technicians.filter(t => t.id !== action.payload) 
-      }
-    
-    case 'ADD_ACTIVITY':
-      // Usa o ID fornecido ou gera um novo se não existir
-      const activityId = action.payload.id || Date.now()
-      return { 
-        ...state, 
-        activities: [...state.activities, { ...action.payload, id: activityId }] 
-      }
-    
-    case 'REMOVE_ACTIVITY':
-      return { 
-        ...state, 
-        activities: state.activities.filter(a => a.id !== action.payload) 
-      }
-    
-    case 'UPDATE_ACTIVITY_STATUS':
-      return {
-        ...state,
-        activities: state.activities.map(a => 
-          a.id === action.payload.id 
-            ? { ...a, status: action.payload.status, notes: action.payload.notes || a.notes }
-            : a
-        )
-      }
-    
-    case 'LOGIN':
-      return { ...state, currentUser: action.payload }
-    
-    case 'LOGOUT':
-      return { ...state, currentUser: null }
-    
-    default:
-      return state
-  }
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(appReducer, initialState)
+  const [sectors, setSectors] = useState([])
+  const [technicians, setTechnicians] = useState([])
+  const [activities, setActivities] = useState([])
+  const [currentUser, setCurrentUser] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  // Load data on mount
+  useEffect(() => {
+    loadAllData()
+  }, [])
+
+  const loadAllData = async () => {
+    try {
+      setLoading(true)
+      const [sectorsRes, techsRes, actsRes] = await Promise.all([
+        fetch(`${API_URL}/sectors`),
+        fetch(`${API_URL}/technicians`),
+        fetch(`${API_URL}/activities`)
+      ])
+
+      if (!sectorsRes.ok || !techsRes.ok || !actsRes.ok) {
+        throw new Error('Failed to load data')
+      }
+
+      const [sectorsData, techsData, actsData] = await Promise.all([
+        sectorsRes.json(),
+        techsRes.json(),
+        actsRes.json()
+      ])
+
+      setSectors(sectorsData)
+      setTechnicians(techsData)
+      setActivities(actsData)
+    } catch (err) {
+      setError(err.message)
+      console.error('Error loading data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // SECTORS
+  const addSector = async (sector) => {
+    try {
+      const res = await fetch(`${API_URL}/sectors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: sector })
+      })
+      if (res.ok) {
+        setSectors([...sectors, sector])
+      }
+    } catch (err) {
+      console.error('Error adding sector:', err)
+    }
+  }
+
+  const removeSector = async (sector) => {
+    try {
+      const res = await fetch(`${API_URL}/sectors/${encodeURIComponent(sector)}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        setSectors(sectors.filter(s => s !== sector))
+      }
+    } catch (err) {
+      console.error('Error removing sector:', err)
+    }
+  }
+
+  // TECHNICIANS
+  const addTechnician = async (technician) => {
+    try {
+      const res = await fetch(`${API_URL}/technicians`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(technician)
+      })
+      if (res.ok) {
+        const newTech = await res.json()
+        setTechnicians([...technicians, newTech])
+      }
+    } catch (err) {
+      console.error('Error adding technician:', err)
+    }
+  }
+
+  const removeTechnician = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/technicians/${id}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        setTechnicians(technicians.filter(t => t.id !== id))
+      }
+    } catch (err) {
+      console.error('Error removing technician:', err)
+    }
+  }
+
+  // ACTIVITIES
+  const addActivity = async (activity) => {
+    try {
+      const res = await fetch(`${API_URL}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(activity)
+      })
+      if (res.ok) {
+        const newActivity = await res.json()
+        setActivities([newActivity, ...activities])
+      }
+    } catch (err) {
+      console.error('Error adding activity:', err)
+    }
+  }
+
+  const removeActivity = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/activities/${id}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        setActivities(activities.filter(a => a.id !== id))
+      }
+    } catch (err) {
+      console.error('Error removing activity:', err)
+    }
+  }
+
+  const updateActivityStatus = async (id, status, notes) => {
+    try {
+      const res = await fetch(`${API_URL}/activities/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes })
+      })
+      if (res.ok) {
+        setActivities(activities.map(a => 
+          a.id === id ? { ...a, status, notes: notes || a.notes } : a
+        ))
+      }
+    } catch (err) {
+      console.error('Error updating activity:', err)
+    }
+  }
+
+  const login = (user) => setCurrentUser(user)
+  const logout = () => setCurrentUser(null)
 
   const value = {
-    ...state,
-    addSector: (sector) => dispatch({ type: 'ADD_SECTOR', payload: sector }),
-    removeSector: (sector) => dispatch({ type: 'REMOVE_SECTOR', payload: sector }),
-    addTechnician: (technician) => dispatch({ type: 'ADD_TECHNICIAN', payload: technician }),
-    removeTechnician: (id) => dispatch({ type: 'REMOVE_TECHNICIAN', payload: id }),
-    addActivity: (activity) => dispatch({ type: 'ADD_ACTIVITY', payload: activity }),
-    removeActivity: (id) => dispatch({ type: 'REMOVE_ACTIVITY', payload: id }),
-    updateActivityStatus: (id, status, notes) => dispatch({ 
-      type: 'UPDATE_ACTIVITY_STATUS', 
-      payload: { id, status, notes } 
-    }),
-    login: (user) => dispatch({ type: 'LOGIN', payload: user }),
-    logout: () => dispatch({ type: 'LOGOUT' })
+    sectors,
+    technicians,
+    activities,
+    currentUser,
+    loading,
+    error,
+    addSector,
+    removeSector,
+    addTechnician,
+    removeTechnician,
+    addActivity,
+    removeActivity,
+    updateActivityStatus,
+    login,
+    logout,
+    refreshData: loadAllData
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
