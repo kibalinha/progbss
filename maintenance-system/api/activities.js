@@ -1,10 +1,10 @@
-import { Pool } from '@neondatabase/serverless'
+const { Pool } = require('@neondatabase/serverless')
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL
 })
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
