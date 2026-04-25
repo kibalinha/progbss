@@ -1,13 +1,31 @@
-import { createContext, useContext, useReducer } from 'react'
+import { createContext, useContext, useReducer, useEffect } from 'react'
 import { initialSectors, initialTechnicians, initialActivities } from '../data/initialData'
 
 const AppContext = createContext()
 
+const STORAGE_KEY = 'maintenance-system-data'
+
+// Load from localStorage or use defaults
+const loadFromStorage = () => {
+  if (typeof window === 'undefined') return null
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (e) {
+    console.error('Error loading from localStorage:', e)
+  }
+  return null
+}
+
+const savedData = loadFromStorage()
+
 const initialState = {
-  sectors: initialSectors,
-  technicians: initialTechnicians,
-  activities: initialActivities,
-  currentUser: null
+  sectors: savedData?.sectors || initialSectors,
+  technicians: savedData?.technicians || initialTechnicians,
+  activities: savedData?.activities || initialActivities,
+  currentUser: savedData?.currentUser || null
 }
 
 function appReducer(state, action) {
@@ -72,6 +90,22 @@ function appReducer(state, action) {
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
+  // Save to localStorage whenever state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          sectors: state.sectors,
+          technicians: state.technicians,
+          activities: state.activities,
+          currentUser: state.currentUser
+        }))
+      } catch (e) {
+        console.error('Error saving to localStorage:', e)
+      }
+    }
+  }, [state])
+
   const value = {
     ...state,
     addSector: (sector) => dispatch({ type: 'ADD_SECTOR', payload: sector }),
@@ -85,7 +119,11 @@ export function AppProvider({ children }) {
       payload: { id, status, notes } 
     }),
     login: (user) => dispatch({ type: 'LOGIN', payload: user }),
-    logout: () => dispatch({ type: 'LOGOUT' })
+    logout: () => dispatch({ type: 'LOGOUT' }),
+    resetData: () => {
+      localStorage.removeItem(STORAGE_KEY)
+      window.location.reload()
+    }
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
