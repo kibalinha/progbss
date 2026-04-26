@@ -136,12 +136,86 @@ export function Schedule() {
     if (!activitiesRef.current) return
     
     try {
-      // Temporariamente remove o scroll e limitação de altura
-      const originalStyle = activitiesRef.current.style.cssText
-      activitiesRef.current.style.maxHeight = 'none'
-      activitiesRef.current.style.overflow = 'visible'
+      // Criar container temporário para exportação
+      const exportContainer = document.createElement('div')
+      exportContainer.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        width: 800px;
+        padding: 30px;
+        background: #0f172a;
+        font-family: system-ui, -apple-system, sans-serif;
+      `
       
-      const canvas = await html2canvas(activitiesRef.current, {
+      // Cabeçalho
+      const header = document.createElement('div')
+      header.style.cssText = `
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f97316;
+      `
+      header.innerHTML = `
+        <h1 style="color: #f97316; font-size: 28px; margin: 0 0 10px 0; font-weight: bold;">Programação - ${activeSector}</h1>
+        <p style="color: #94a3b8; font-size: 16px; margin: 0;">${formatDate(actualDate)} • Turno ${getShiftLabel(selectedShift)}</p>
+        <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">${scheduledActivities.length} atividade${scheduledActivities.length !== 1 ? 's' : ''}</p>
+      `
+      
+      exportContainer.appendChild(header)
+      
+      // Lista de atividades
+      scheduledActivities.forEach((activity, index) => {
+        const item = document.createElement('div')
+        item.style.cssText = `
+          padding: 15px;
+          margin-bottom: 12px;
+          background: #1e293b;
+          border-radius: 8px;
+          border-left: 4px solid ${activity.priority === 'high' ? '#ef4444' : activity.priority === 'medium' ? '#f97316' : '#22c55e'};
+        `
+        
+        const priorityColors = {
+          high: '#ef4444',
+          medium: '#f97316',
+          low: '#22c55e'
+        }
+        
+        const statusColors = {
+          pending: '#64748b',
+          in_progress: '#3b82f6',
+          completed: '#22c55e',
+          not_done: '#ef4444',
+          extra: '#a855f7'
+        }
+        
+        item.innerHTML = `
+          <div style="color: #f1f5f9; font-size: 16px; font-weight: 600; margin-bottom: 8px;">${index + 1}. ${activity.description}</div>
+          <div style="color: #94a3b8; font-size: 14px; margin-bottom: 6px;">👤 ${activity.technician} ${activity.estimatedTime > 0 ? `⏱️ ${activity.estimatedTime}min` : ''}</div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span style="color: ${priorityColors[activity.priority]}; font-size: 12px; padding: 4px 8px; background: ${priorityColors[activity.priority]}20; border-radius: 4px; font-weight: 500;">${getPriorityLabel(activity.priority)}</span>
+            <span style="color: ${statusColors[activity.status]}; font-size: 12px; padding: 4px 8px; background: ${statusColors[activity.status]}20; border-radius: 4px; font-weight: 500;">${getStatusLabel(activity.status)}</span>
+          </div>
+        `
+        
+        exportContainer.appendChild(item)
+      })
+      
+      // Rodapé
+      const footer = document.createElement('div')
+      footer.style.cssText = `
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #334155;
+        text-align: center;
+        color: #64748b;
+        font-size: 12px;
+      `
+      footer.innerHTML = 'Sistema de Manutenção Industrial'
+      exportContainer.appendChild(footer)
+      
+      document.body.appendChild(exportContainer)
+      
+      const canvas = await html2canvas(exportContainer, {
         backgroundColor: '#0f172a',
         scale: 2,
         logging: false,
@@ -149,8 +223,7 @@ export function Schedule() {
         allowTaint: true
       })
       
-      // Restaura o estilo original
-      activitiesRef.current.style.cssText = originalStyle
+      document.body.removeChild(exportContainer)
       
       const link = document.createElement('a')
       link.download = `programacao-${activeSector}-${formatDate(actualDate)}.png`
