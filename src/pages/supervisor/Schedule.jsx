@@ -136,11 +136,21 @@ export function Schedule() {
     if (!activitiesRef.current) return
     
     try {
+      // Temporariamente remove o scroll e limitação de altura
+      const originalStyle = activitiesRef.current.style.cssText
+      activitiesRef.current.style.maxHeight = 'none'
+      activitiesRef.current.style.overflow = 'visible'
+      
       const canvas = await html2canvas(activitiesRef.current, {
         backgroundColor: '#0f172a',
         scale: 2,
-        logging: false
+        logging: false,
+        useCORS: true,
+        allowTaint: true
       })
+      
+      // Restaura o estilo original
+      activitiesRef.current.style.cssText = originalStyle
       
       const link = document.createElement('a')
       link.download = `programacao-${activeSector}-${formatDate(actualDate)}.png`
@@ -453,7 +463,7 @@ Manutenção preventiva...`}
             </div>
           </CardHeader>
           <CardContent>
-            <div ref={activitiesRef} className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            <div ref={activitiesRef} className="space-y-3 max-h-[400px] overflow-y-auto pr-2" id="activities-container">
               {scheduledActivities.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
                   Nenhuma atividade programada para {activeSector} neste turno
