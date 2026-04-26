@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useApp } from '../../context/AppContext'
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -13,7 +13,8 @@ import {
   getStatusColor,
   getStatusLabel
 } from '../../utils/helpers'
-import { Trash2, Plus, CalendarDays, Clock, Sun, Moon, Zap, Settings, Droplets, Gauge, FileSpreadsheet, List, User } from 'lucide-react'
+import { Trash2, Plus, CalendarDays, Clock, Sun, Moon, Zap, Settings, Droplets, Gauge, FileSpreadsheet, List, User, Download } from 'lucide-react'
+import html2canvas from 'html2canvas'
 
 const sectorIcons = {
   'Elétrica': Zap,
@@ -24,6 +25,7 @@ const sectorIcons = {
 
 export function Schedule() {
   const { sectors, technicians, activities, addActivity, removeActivity } = useApp()
+  const activitiesRef = useRef(null)
   
   const [referenceDate, setReferenceDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedShift, setSelectedShift] = useState('night')
@@ -128,6 +130,25 @@ export function Schedule() {
       estimatedTime: '',
       lines: ''
     })
+  }
+
+  const handleExportImage = async () => {
+    if (!activitiesRef.current) return
+    
+    try {
+      const canvas = await html2canvas(activitiesRef.current, {
+        backgroundColor: '#0f172a',
+        scale: 2,
+        logging: false
+      })
+      
+      const link = document.createElement('a')
+      link.download = `programacao-${activeSector}-${formatDate(actualDate)}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } catch (error) {
+      console.error('Erro ao exportar imagem:', error)
+    }
   }
   
   return (
@@ -413,13 +434,26 @@ Manutenção preventiva...`}
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Atividades - {activeSector}</CardTitle>
-              <Badge variant="default">
-                {scheduledActivities.length} atividade{scheduledActivities.length !== 1 ? 's' : ''}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="default">
+                  {scheduledActivities.length} atividade{scheduledActivities.length !== 1 ? 's' : ''}
+                </Badge>
+                {scheduledActivities.length > 0 && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleExportImage}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">Exportar</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            <div ref={activitiesRef} className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
               {scheduledActivities.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
                   Nenhuma atividade programada para {activeSector} neste turno
