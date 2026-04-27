@@ -213,8 +213,11 @@ export function AppProvider({ children }) {
           notes: activity.notes || ''
         })
       })
-      const result = await res.json()
-      dispatch({ type: 'ADD_ACTIVITY', payload: result })
+      
+      // Refetch all activities to ensure sync with database
+      const activitiesRes = await fetch(`${API_BASE}/activities`)
+      const activities = await activitiesRes.json()
+      dispatch({ type: 'SET_DATA', payload: { activities } })
     } catch (error) {
       console.error('Error adding activity:', error)
       dispatch({ type: 'ADD_ACTIVITY', payload: activity })
