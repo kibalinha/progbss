@@ -99,7 +99,33 @@ function appReducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch data from API on mount, fallback to localStorage
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [sectorsRes, techniciansRes, activitiesRes] = await Promise.all([
+          fetch(`${API_BASE}/sectors`),
+          fetch(`${API_BASE}/technicians`),
+          fetch(`${API_BASE}/activities`)
+        ])
+
+        const sectors = await sectorsRes.json()
+        const technicians = await techniciansRes.json()
+        const activities = await activitiesRes.json()
+
+        dispatch({ type: 'SET_DATA', payload: { sectors, technicians, activities } })
+      } catch (error) {
+        console.error('Error fetching data from API:', error)
+        // Fall back to localStorage if API fails
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   // Save to localStorage whenever state changes
   useEffect(() => {

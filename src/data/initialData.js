@@ -5,7 +5,8 @@ export const initialSectors = [
   'Elétrica',
   'Mecânica',
   'Utilidades',
-  'Instrumentação'
+  'Instrumentação',
+  'Civil'
 ]
 
 export const initialTechnicians = [
