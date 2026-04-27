@@ -2,6 +2,23 @@ import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL);
 
+function toCamelActivity(row) {
+  return {
+    id: row.id,
+    description: row.description,
+    sector: row.sector,
+    technician: row.technician,
+    priority: row.priority,
+    status: row.status,
+    date: row.date,
+    shift: row.shift,
+    estimatedTime: row.estimated_time,
+    isExtra: row.is_extra,
+    notes: row.notes,
+    createdAt: row.created_at
+  };
+}
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -20,22 +37,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const activities = await sql`SELECT * FROM activities ORDER BY created_at DESC`;
-      // Convert snake_case to camelCase for frontend compatibility
-      const formattedActivities = activities.map(a => ({
-        id: a.id,
-        description: a.description,
-        sector: a.sector,
-        technician: a.technician,
-        priority: a.priority,
-        status: a.status,
-        date: a.date,
-        shift: a.shift,
-        estimatedTime: a.estimated_time,
-        isExtra: a.is_extra,
-        notes: a.notes,
-        createdAt: a.created_at
-      }));
-      res.json(formattedActivities);
+      const mapped = activities.map(toCamelActivity);
+      res.json(mapped);
     } catch (error) {
       console.error('Error fetching activities:', error);
       res.status(500).json({ error: 'Failed to fetch activities' });
@@ -48,22 +51,8 @@ export default async function handler(req, res) {
         VALUES (${description}, ${sector}, ${technician}, ${priority}, ${status}, ${date}, ${shift}, ${estimatedTime}, ${isExtra}, ${notes})
         RETURNING *
       `;
-      // Convert snake_case to camelCase for frontend compatibility
-      const formattedResult = {
-        id: result[0].id,
-        description: result[0].description,
-        sector: result[0].sector,
-        technician: result[0].technician,
-        priority: result[0].priority,
-        status: result[0].status,
-        date: result[0].date,
-        shift: result[0].shift,
-        estimatedTime: result[0].estimated_time,
-        isExtra: result[0].is_extra,
-        notes: result[0].notes,
-        createdAt: result[0].created_at
-      };
-      res.json(formattedResult);
+      const inserted = result[0];
+      res.json(toCamelActivity(inserted));
     } catch (error) {
       console.error('Error adding activity:', error);
       res.status(500).json({ error: 'Failed to add activity' });
