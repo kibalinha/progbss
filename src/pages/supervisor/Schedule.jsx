@@ -6,6 +6,7 @@ import { Input, Select } from '../../components/ui/Input'
 import { Badge } from '../../components/ui/Badge'
 import { 
   formatDate, 
+  getNextDay,
   getShiftLabel,
   getPriorityColor,
   getPriorityLabel,
@@ -59,6 +60,13 @@ export function Schedule() {
     setFormData(prev => ({ ...prev, sector: activeSector, technician: '' }))
   }, [activeSector])
   
+  // Lógica de data: referenceDate = dia da programação
+  // Noite: atividades são para o próprio dia (27/04 noite = data 27/04)
+  // Dia: atividades são para o dia seguinte (27/04 dia = data 28/04)
+  const actualDate = useMemo(() => {
+    return selectedShift === 'day' ? getNextDay(referenceDate) : referenceDate
+  }, [selectedShift, referenceDate])
+
   const availableTechnicians = useMemo(() => {
     return technicians.filter(t =>
       t.shift === selectedShift &&
@@ -68,11 +76,11 @@ export function Schedule() {
 
   const scheduledActivities = useMemo(() => {
     return activities.filter(a =>
-      a.date === referenceDate &&
+      a.date === actualDate &&
       a.shift === selectedShift &&
       a.sector === activeSector
     )
-  }, [activities, referenceDate, selectedShift, activeSector])
+  }, [activities, actualDate, selectedShift, activeSector])
   
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -82,7 +90,7 @@ export function Schedule() {
       ...formData,
       sector: activeSector,
       status: 'pending',
-      date: referenceDate,
+      date: actualDate,
       shift: selectedShift,
       estimatedTime: parseInt(formData.estimatedTime) || 0
     })
@@ -112,7 +120,7 @@ export function Schedule() {
         technician: bulkData.technician,
         priority: bulkData.priority,
         status: 'pending',
-        date: referenceDate,
+        date: actualDate,
         shift: selectedShift,
         estimatedTime: parseInt(bulkData.estimatedTime) || 0
       })
@@ -152,7 +160,7 @@ export function Schedule() {
       `
       header.innerHTML = `
         <h1 style="color: #f97316; font-size: 28px; margin: 0 0 10px 0; font-weight: bold;">Programação - ${activeSector}</h1>
-        <p style="color: #94a3b8; font-size: 16px; margin: 0;">${formatDate(referenceDate)} • Turno ${getShiftLabel(selectedShift)}</p>
+        <p style="color: #94a3b8; font-size: 16px; margin: 0;">${formatDate(actualDate)} • Turno ${getShiftLabel(selectedShift)}</p>
         <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">${scheduledActivities.length} atividade${scheduledActivities.length !== 1 ? 's' : ''}</p>
       `
       
@@ -221,7 +229,7 @@ export function Schedule() {
       document.body.removeChild(exportContainer)
       
       const link = document.createElement('a')
-      link.download = `programacao-${activeSector}-${formatDate(referenceDate)}.png`
+      link.download = `programacao-${activeSector}-${formatDate(actualDate)}.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
     } catch (error) {
@@ -312,7 +320,7 @@ export function Schedule() {
             <div className="px-3 sm:px-4 py-2 bg-slate-800 rounded-lg border border-slate-700 w-full sm:w-auto">
               <p className="text-xs text-slate-500">Programando</p>
               <p className="text-sm font-medium text-slate-200">
-                {activeSector} — Turno {getShiftLabel(selectedShift)} — {formatDate(referenceDate)}
+                {activeSector} — Turno {getShiftLabel(selectedShift)} — {formatDate(actualDate)}
               </p>
             </div>
           </div>

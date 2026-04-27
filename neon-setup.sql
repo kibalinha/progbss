@@ -41,7 +41,8 @@ INSERT INTO sectors (name) VALUES
     ('Elétrica'),
     ('Mecânica'),
     ('Utilidades'),
-    ('Instrumentação')
+    ('Instrumentação'),
+    ('Civil')
 ON CONFLICT (name) DO NOTHING;
 
 -- Inserir técnicos iniciais (exemplos)

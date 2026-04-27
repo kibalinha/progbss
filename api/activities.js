@@ -2,6 +2,15 @@ import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL);
 
+function formatDate(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function toCamelActivity(row) {
   return {
     id: row.id,
@@ -10,7 +19,7 @@ function toCamelActivity(row) {
     technician: row.technician,
     priority: row.priority,
     status: row.status,
-    date: row.date,
+    date: formatDate(row.date),
     shift: row.shift,
     estimatedTime: row.estimated_time,
     isExtra: row.is_extra,

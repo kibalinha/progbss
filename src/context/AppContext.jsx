@@ -79,9 +79,19 @@ function appReducer(state, action) {
     case 'UPDATE_ACTIVITY_STATUS':
       return {
         ...state,
-        activities: state.activities.map(a => 
-          a.id === action.payload.id 
+        activities: state.activities.map(a =>
+          a.id === action.payload.id
             ? { ...a, status: action.payload.status, notes: action.payload.notes || a.notes }
+            : a
+        )
+      }
+
+    case 'UPDATE_ACTIVITY_ID':
+      return {
+        ...state,
+        activities: state.activities.map(a =>
+          a.id === action.payload.oldId
+            ? { ...a, id: action.payload.newId }
             : a
         )
       }
@@ -201,9 +211,9 @@ export function AppProvider({ children }) {
   }
 
   const addActivity = async (activity) => {
-    // ✅ Adiciona ao state IMEDIATAMENTE - sem esperar a resposta do servidor
+    // Adiciona ao state IMEDIATAMENTE
     dispatch({ type: 'ADD_ACTIVITY', payload: activity })
-    
+
     try {
       const res = await fetch(`${API_BASE}/activities`, {
         method: 'POST',
@@ -221,18 +231,21 @@ export function AppProvider({ children }) {
           notes: activity.notes || ''
         })
       })
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`)
       }
-      
-      // ✅ Refetch em background para sincronizar com o banco de dados
-      const activitiesRes = await fetch(`${API_BASE}/activities`)
-      const activities = await activitiesRes.json()
-      dispatch({ type: 'SET_DATA', payload: { activities } })
+
+      // Atualiza o ID da atividade com o ID real do banco
+      const result = await res.json()
+      if (result.id) {
+        dispatch({
+          type: 'UPDATE_ACTIVITY_ID',
+          payload: { oldId: activity.id, newId: result.id }
+        })
+      }
     } catch (error) {
       console.error('Error adding activity to database:', error)
-      // A atividade já está no state local, então o usuário vê ela na interface
     }
   }
 
