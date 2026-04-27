@@ -196,6 +196,9 @@ export function AppProvider({ children }) {
   }
 
   const addActivity = async (activity) => {
+    // ✅ Adiciona ao state IMEDIATAMENTE - sem esperar a resposta do servidor
+    dispatch({ type: 'ADD_ACTIVITY', payload: activity })
+    
     try {
       const res = await fetch(`${API_BASE}/activities`, {
         method: 'POST',
@@ -214,13 +217,17 @@ export function AppProvider({ children }) {
         })
       })
       
-      // Refetch all activities to ensure sync with database
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
+      }
+      
+      // ✅ Refetch em background para sincronizar com o banco de dados
       const activitiesRes = await fetch(`${API_BASE}/activities`)
       const activities = await activitiesRes.json()
       dispatch({ type: 'SET_DATA', payload: { activities } })
     } catch (error) {
-      console.error('Error adding activity:', error)
-      dispatch({ type: 'ADD_ACTIVITY', payload: activity })
+      console.error('Error adding activity to database:', error)
+      // A atividade já está no state local, então o usuário vê ela na interface
     }
   }
 
