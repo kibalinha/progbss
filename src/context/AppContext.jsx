@@ -1,9 +1,11 @@
-import { createContext, useContext, useReducer, useEffect } from 'react'
+import { createContext, useContext, useReducer, useEffect, useState } from 'react'
 import { initialSectors, initialTechnicians, initialActivities } from '../data/initialData'
 
 const AppContext = createContext()
 
 const STORAGE_KEY = 'maintenance-system-data'
+
+const API_BASE = '/api'
 
 // Load from localStorage or use defaults
 const loadFromStorage = () => {
@@ -30,6 +32,9 @@ const initialState = {
 
 function appReducer(state, action) {
   switch (action.type) {
+    case 'SET_DATA':
+      return { ...state, ...action.payload }
+    
     case 'ADD_SECTOR':
       if (state.sectors.includes(action.payload)) return state
       return { ...state, sectors: [...state.sectors, action.payload] }
@@ -89,6 +94,33 @@ function appReducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch data from API on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [sectorsRes, techniciansRes, activitiesRes] = await Promise.all([
+          fetch(`${API_BASE}/sectors`),
+          fetch(`${API_BASE}/technicians`),
+          fetch(`${API_BASE}/activities`)
+        ])
+
+        const sectors = await sectorsRes.json()
+        const technicians = await techniciansRes.json()
+        const activities = await activitiesRes.json()
+
+        dispatch({ type: 'SET_DATA', payload: { sectors, technicians, activities } })
+      } catch (error) {
+        console.error('Error fetching data from API:', error)
+        // Fall back to localStorage if API fails
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   // Save to localStorage whenever state changes
   useEffect(() => {
@@ -106,18 +138,127 @@ export function AppProvider({ children }) {
     }
   }, [state])
 
+  const addSector = async (sector) => {
+    try {
+      await fetch(`${API_BASE}/sectors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: sector })
+      })
+      dispatch({ type: 'ADD_SECTOR', payload: sector })
+    } catch (error) {
+      console.error('Error adding sector:', error)
+      dispatch({ type: 'ADD_SECTOR', payload: sector })
+    }
+  }
+
+  const removeSector = async (sector) => {
+    try {
+      await fetch(`${API_BASE}/sectors`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: sector })
+      })
+      dispatch({ type: 'REMOVE_SECTOR', payload: sector })
+    } catch (error) {
+      console.error('Error removing sector:', error)
+      dispatch({ type: 'REMOVE_SECTOR', payload: sector })
+    }
+  }
+
+  const addTechnician = async (technician) => {
+    try {
+      const res = await fetch(`${API_BASE}/technicians`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(technician)
+      })
+      const result = await res.json()
+      dispatch({ type: 'ADD_TECHNICIAN', payload: result })
+    } catch (error) {
+      console.error('Error adding technician:', error)
+      dispatch({ type: 'ADD_TECHNICIAN', payload: technician })
+    }
+  }
+
+  const removeTechnician = async (id) => {
+    try {
+      await fetch(`${API_BASE}/technicians`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      dispatch({ type: 'REMOVE_TECHNICIAN', payload: id })
+    } catch (error) {
+      console.error('Error removing technician:', error)
+      dispatch({ type: 'REMOVE_TECHNICIAN', payload: id })
+    }
+  }
+
+  const addActivity = async (activity) => {
+    try {
+      const res = await fetch(`${API_BASE}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: activity.description,
+          sector: activity.sector,
+          technician: activity.technician,
+          priority: activity.priority,
+          status: activity.status,
+          date: activity.date,
+          shift: activity.shift,
+          estimatedTime: activity.estimatedTime,
+          isExtra: activity.isExtra || false,
+          notes: activity.notes || ''
+        })
+      })
+      const result = await res.json()
+      dispatch({ type: 'ADD_ACTIVITY', payload: result })
+    } catch (error) {
+      console.error('Error adding activity:', error)
+      dispatch({ type: 'ADD_ACTIVITY', payload: activity })
+    }
+  }
+
+  const removeActivity = async (id) => {
+    try {
+      await fetch(`${API_BASE}/activities`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      dispatch({ type: 'REMOVE_ACTIVITY', payload: id })
+    } catch (error) {
+      console.error('Error removing activity:', error)
+      dispatch({ type: 'REMOVE_ACTIVITY', payload: id })
+    }
+  }
+
+  const updateActivityStatus = async (id, status, notes) => {
+    try {
+      await fetch(`${API_BASE}/activities`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status, notes })
+      })
+      dispatch({ type: 'UPDATE_ACTIVITY_STATUS', payload: { id, status, notes } })
+    } catch (error) {
+      console.error('Error updating activity:', error)
+      dispatch({ type: 'UPDATE_ACTIVITY_STATUS', payload: { id, status, notes } })
+    }
+  }
+
   const value = {
     ...state,
-    addSector: (sector) => dispatch({ type: 'ADD_SECTOR', payload: sector }),
-    removeSector: (sector) => dispatch({ type: 'REMOVE_SECTOR', payload: sector }),
-    addTechnician: (technician) => dispatch({ type: 'ADD_TECHNICIAN', payload: technician }),
-    removeTechnician: (id) => dispatch({ type: 'REMOVE_TECHNICIAN', payload: id }),
-    addActivity: (activity) => dispatch({ type: 'ADD_ACTIVITY', payload: activity }),
-    removeActivity: (id) => dispatch({ type: 'REMOVE_ACTIVITY', payload: id }),
-    updateActivityStatus: (id, status, notes) => dispatch({ 
-      type: 'UPDATE_ACTIVITY_STATUS', 
-      payload: { id, status, notes } 
-    }),
+    loading,
+    addSector,
+    removeSector,
+    addTechnician,
+    removeTechnician,
+    addActivity,
+    removeActivity,
+    updateActivityStatus,
     login: (user) => dispatch({ type: 'LOGIN', payload: user }),
     logout: () => dispatch({ type: 'LOGOUT' }),
     resetData: () => {
