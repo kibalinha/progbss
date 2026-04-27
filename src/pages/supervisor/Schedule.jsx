@@ -235,9 +235,9 @@ export function Schedule() {
   }
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Abas dos Setores */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
         {sectors.map(sector => {
           const Icon = sectorIcons[sector] || Settings
           const isActive = activeSector === sector
@@ -245,14 +245,14 @@ export function Schedule() {
             <button
               key={sector}
               onClick={() => setActiveSector(sector)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
                 isActive
                   ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
                   : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-700'
               }`}
             >
               <Icon className="w-4 h-4" />
-              {sector}
+              <span className="text-sm sm:text-base">{sector}</span>
             </button>
           )
         })}
@@ -269,52 +269,52 @@ export function Schedule() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <CalendarDays className="w-5 h-5 text-slate-400" />
-              <div>
+              <div className="w-full sm:w-auto">
                 <label className="block text-xs text-slate-500 mb-1">Data de Referência</label>
                 <input
                   type="date"
                   value={referenceDate}
                   onChange={(e) => setReferenceDate(e.target.value)}
-                  className="px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                 />
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
               <Clock className="w-5 h-5 text-slate-400" />
-              <div>
+              <div className="w-full sm:w-auto">
                 <label className="block text-xs text-slate-500 mb-1">Turno</label>
                 <div className="flex items-center bg-slate-700 rounded-lg p-1">
                   <button
                     onClick={() => setSelectedShift('night')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
                       selectedShift === 'night' 
                         ? 'bg-indigo-500 text-white' 
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <Moon className="w-4 h-4" />
-                    Noite
+                    <span className="hidden sm:inline">Noite</span>
                   </button>
                   <button
                     onClick={() => setSelectedShift('day')}
-                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
                       selectedShift === 'day' 
                         ? 'bg-sky-500 text-white' 
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <Sun className="w-4 h-4" />
-                    Dia
+                    <span className="hidden sm:inline">Dia</span>
                   </button>
                 </div>
               </div>
             </div>
             
-            <div className="px-4 py-2 bg-slate-800 rounded-lg border border-slate-700">
+            <div className="px-3 sm:px-4 py-2 bg-slate-800 rounded-lg border border-slate-700 w-full sm:w-auto">
               <p className="text-xs text-slate-500">Programando</p>
               <p className="text-sm font-medium text-slate-200">
                 {activeSector} — Turno {getShiftLabel(selectedShift)} — {formatDate(actualDate)}
@@ -324,7 +324,7 @@ export function Schedule() {
         </CardContent>
       </Card>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -387,7 +387,7 @@ export function Schedule() {
                   )}
                 </Select>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="Prioridade"
                     value={formData.priority}
@@ -442,7 +442,7 @@ export function Schedule() {
                   )}
                 </Select>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Select
                     label="Prioridade padrão"
                     value={bulkData.priority}

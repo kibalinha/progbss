@@ -24,10 +24,10 @@ export function SupervisorLayout() {
     <div className="min-h-screen bg-slate-950">
       <Sidebar />
       
-      <div className="ml-64 min-h-screen flex flex-col">
+      <div className="lg:ml-64 min-h-screen flex flex-col pb-16 lg:pb-0">
         <Header title={title} />
         
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-auto">
           <Outlet />
         </main>
       </div>
