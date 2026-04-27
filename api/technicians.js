@@ -20,7 +20,15 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const technicians = await sql`SELECT * FROM technicians ORDER BY name`;
-      res.json(technicians);
+      // Convert snake_case to camelCase for frontend compatibility
+      const formattedTechnicians = technicians.map(t => ({
+        id: t.id,
+        name: t.name,
+        sector: t.sector,
+        shift: t.shift,
+        createdAt: t.created_at
+      }));
+      res.json(formattedTechnicians);
     } catch (error) {
       console.error('Error fetching technicians:', error);
       res.status(500).json({ error: 'Failed to fetch technicians' });
@@ -33,7 +41,15 @@ export default async function handler(req, res) {
         VALUES (${name}, ${sector}, ${shift})
         RETURNING *
       `;
-      res.json(result[0]);
+      // Convert snake_case to camelCase for frontend compatibility
+      const formattedResult = {
+        id: result[0].id,
+        name: result[0].name,
+        sector: result[0].sector,
+        shift: result[0].shift,
+        createdAt: result[0].created_at
+      };
+      res.json(formattedResult);
     } catch (error) {
       console.error('Error adding technician:', error);
       res.status(500).json({ error: 'Failed to add technician' });

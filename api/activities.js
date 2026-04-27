@@ -20,7 +20,22 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const activities = await sql`SELECT * FROM activities ORDER BY created_at DESC`;
-      res.json(activities);
+      // Convert snake_case to camelCase for frontend compatibility
+      const formattedActivities = activities.map(a => ({
+        id: a.id,
+        description: a.description,
+        sector: a.sector,
+        technician: a.technician,
+        priority: a.priority,
+        status: a.status,
+        date: a.date,
+        shift: a.shift,
+        estimatedTime: a.estimated_time,
+        isExtra: a.is_extra,
+        notes: a.notes,
+        createdAt: a.created_at
+      }));
+      res.json(formattedActivities);
     } catch (error) {
       console.error('Error fetching activities:', error);
       res.status(500).json({ error: 'Failed to fetch activities' });
@@ -33,7 +48,22 @@ export default async function handler(req, res) {
         VALUES (${description}, ${sector}, ${technician}, ${priority}, ${status}, ${date}, ${shift}, ${estimatedTime}, ${isExtra}, ${notes})
         RETURNING *
       `;
-      res.json(result[0]);
+      // Convert snake_case to camelCase for frontend compatibility
+      const formattedResult = {
+        id: result[0].id,
+        description: result[0].description,
+        sector: result[0].sector,
+        technician: result[0].technician,
+        priority: result[0].priority,
+        status: result[0].status,
+        date: result[0].date,
+        shift: result[0].shift,
+        estimatedTime: result[0].estimated_time,
+        isExtra: result[0].is_extra,
+        notes: result[0].notes,
+        createdAt: result[0].created_at
+      };
+      res.json(formattedResult);
     } catch (error) {
       console.error('Error adding activity:', error);
       res.status(500).json({ error: 'Failed to add activity' });
