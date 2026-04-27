@@ -33,8 +33,18 @@ const initialState = {
 function appReducer(state, action) {
   switch (action.type) {
     case 'SET_DATA':
-      return { 
-        ...state, 
+      console.log('[SET_DATA] Received payload:', {
+        sectors: action.payload.sectors?.length,
+        technicians: action.payload.technicians?.length,
+        activities: action.payload.activities?.length
+      })
+      console.log('[SET_DATA] Current state:', {
+        sectors: state.sectors.length,
+        technicians: state.technicians.length,
+        activities: state.activities.length
+      })
+      return {
+        ...state,
         sectors: action.payload.sectors || state.sectors,
         technicians: action.payload.technicians || state.technicians,
         activities: action.payload.activities || state.activities
@@ -65,10 +75,15 @@ function appReducer(state, action) {
     
     case 'ADD_ACTIVITY':
       const activityId = action.payload.id || Date.now()
-      return { 
-        ...state, 
-        activities: [...state.activities, { ...action.payload, id: activityId }] 
+      const newActivity = { ...action.payload, id: activityId }
+      console.log('[ADD_ACTIVITY] Before:', state.activities.length, 'activities')
+      console.log('[ADD_ACTIVITY] Adding:', newActivity)
+      const newState = {
+        ...state,
+        activities: [...state.activities, newActivity]
       }
+      console.log('[ADD_ACTIVITY] After:', newState.activities.length, 'activities')
+      return newState
     
     case 'REMOVE_ACTIVITY':
       return { 
@@ -124,6 +139,13 @@ export function AppProvider({ children }) {
         const sectors = await sectorsRes.json()
         const technicians = await techniciansRes.json()
         const activities = await activitiesRes.json()
+
+        console.log('[fetchData] Fetched from API:', {
+          sectors: sectors.length,
+          technicians: technicians.length,
+          activities: activities.length
+        })
+        console.log('[fetchData] Activities:', activities.map(a => ({ id: a.id, sector: a.sector, date: a.date })))
 
         dispatch({ type: 'SET_DATA', payload: { sectors, technicians, activities } })
       } catch (error) {
@@ -212,6 +234,8 @@ export function AppProvider({ children }) {
 
   const addActivity = async (activity) => {
     // Adiciona ao state IMEDIATAMENTE
+    console.log('[addActivity] Adding activity:', activity)
+    console.log('[addActivity] Current activities count:', state.activities.length)
     dispatch({ type: 'ADD_ACTIVITY', payload: activity })
 
     try {

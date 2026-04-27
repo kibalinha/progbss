@@ -75,11 +75,20 @@ export function Schedule() {
   }, [technicians, selectedShift, activeSector])
 
   const scheduledActivities = useMemo(() => {
-    return activities.filter(a =>
+    console.log('[Schedule] Filtering activities:', {
+      total: activities.length,
+      actualDate,
+      selectedShift,
+      activeSector
+    })
+    console.log('[Schedule] All activities:', activities.map(a => ({ id: a.id, sector: a.sector, date: a.date, shift: a.shift })))
+    const filtered = activities.filter(a =>
       a.date === actualDate &&
       a.shift === selectedShift &&
       a.sector === activeSector
     )
+    console.log('[Schedule] Filtered activities:', filtered.length)
+    return filtered
   }, [activities, actualDate, selectedShift, activeSector])
   
   const handleSubmit = (e) => {
