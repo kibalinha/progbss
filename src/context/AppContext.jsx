@@ -33,7 +33,12 @@ const initialState = {
 function appReducer(state, action) {
   switch (action.type) {
     case 'SET_DATA':
-      return { ...state, ...action.payload }
+      return { 
+        ...state, 
+        sectors: action.payload.sectors || state.sectors,
+        technicians: action.payload.technicians || state.technicians,
+        activities: action.payload.activities || state.activities
+      }
     
     case 'ADD_SECTOR':
       if (state.sectors.includes(action.payload)) return state
@@ -94,33 +99,7 @@ function appReducer(state, action) {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
-  const [loading, setLoading] = useState(true)
-
-  // Fetch data from API on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [sectorsRes, techniciansRes, activitiesRes] = await Promise.all([
-          fetch(`${API_BASE}/sectors`),
-          fetch(`${API_BASE}/technicians`),
-          fetch(`${API_BASE}/activities`)
-        ])
-
-        const sectors = await sectorsRes.json()
-        const technicians = await techniciansRes.json()
-        const activities = await activitiesRes.json()
-
-        dispatch({ type: 'SET_DATA', payload: { sectors, technicians, activities } })
-      } catch (error) {
-        console.error('Error fetching data from API:', error)
-        // Fall back to localStorage if API fails
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
+  const [loading, setLoading] = useState(false)
 
   // Save to localStorage whenever state changes
   useEffect(() => {
