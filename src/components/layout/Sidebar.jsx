@@ -1,7 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { LayoutDashboard, CalendarDays, Users, Building2, LogOut, Wrench, Menu, X } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, Users, Building2, LogOut, Wrench } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
-import { useState } from 'react'
 
 const navItems = [
   { path: '/supervisor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -13,18 +12,9 @@ const navItems = [
 export function Sidebar() {
   const { logout } = useAuth()
   const location = useLocation()
-  const [isOpen, setIsOpen] = useState(false)
   
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed bottom-4 right-4 z-50 w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center shadow-lg shadow-orange-500/30"
-      >
-        {isOpen ? <X className="w-6 h-6 text-white" /> : <Menu className="w-6 h-6 text-white" />}
-      </button>
-      
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-800 flex-col z-40">
         <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
