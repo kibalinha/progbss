@@ -2,6 +2,23 @@ import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL);
 
+function toCamelActivity(row) {
+  return {
+    id: row.id,
+    description: row.description,
+    sector: row.sector,
+    technician: row.technician,
+    priority: row.priority,
+    status: row.status,
+    date: row.date,
+    shift: row.shift,
+    estimatedTime: row.estimated_time,
+    isExtra: row.is_extra,
+    notes: row.notes,
+    createdAt: row.created_at
+  };
+}
+
 export default async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -20,7 +37,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const activities = await sql`SELECT * FROM activities ORDER BY created_at DESC`;
-      res.json(activities);
+      const mapped = activities.map(toCamelActivity);
+      res.json(mapped);
     } catch (error) {
       console.error('Error fetching activities:', error);
       res.status(500).json({ error: 'Failed to fetch activities' });
@@ -33,7 +51,8 @@ export default async function handler(req, res) {
         VALUES (${description}, ${sector}, ${technician}, ${priority}, ${status}, ${date}, ${shift}, ${estimatedTime}, ${isExtra}, ${notes})
         RETURNING *
       `;
-      res.json(result[0]);
+      const inserted = result[0];
+      res.json(toCamelActivity(inserted));
     } catch (error) {
       console.error('Error adding activity:', error);
       res.status(500).json({ error: 'Failed to add activity' });
