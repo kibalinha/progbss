@@ -6,11 +6,10 @@ import { Button } from '../components/ui/Button'
 import { Modal } from '../components/ui/Modal'
 import { Input, TextArea } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
-import { 
-  formatDate, 
-  getCurrentShift, 
+import {
+  formatDate,
+  getCurrentShift,
   getShiftLabel,
-  getShiftBadgeColor,
   getPriorityColor,
   getPriorityLabel,
   getStatusColor,
@@ -54,7 +53,7 @@ export function TechnicianView() {
   const [notDoingActivity, setNotDoingActivity] = useState(null)
   const [completionNotes, setCompletionNotes] = useState('')
   const [notDoneReason, setNotDoneReason] = useState('')
-  
+
   // Formulário de atividade extra
   const [extraForm, setExtraForm] = useState({
     description: '',
@@ -62,25 +61,28 @@ export function TechnicianView() {
     estimatedTime: ''
   })
   const [showExtraForm, setShowExtraForm] = useState(false)
-  
+
   const technician = technicians.find(t => t.name === name)
   const currentShift = getCurrentShift()
-  const today = new Date().toISOString().split('T')[0]
-  
-  // Atividades programadas (filtro normal)
+
+  // Estados para seleção de data e turno (permitindo técnico escolher)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedShift, setSelectedShift] = useState(currentShift)
+
+  // Atividades programadas (filtro baseado na seleção do técnico)
   const myScheduledActivities = filterActivitiesByTechnicianAndShift(
-    activities.filter(a => !a.isExtra), 
-    name, 
-    currentShift,
-    today
+    activities.filter(a => !a.isExtra),
+    name,
+    selectedShift,
+    selectedDate
   )
-  
-  // Atividades extras (criadas pelo próprio técnico)
-  const myExtraActivities = activities.filter(a => 
-    a.isExtra && 
-    a.technician === name && 
-    a.date === today &&
-    a.shift === currentShift
+
+  // Atividades extras (criadas pelo próprio técnico na data/turno selecionados)
+  const myExtraActivities = activities.filter(a =>
+    a.isExtra &&
+    a.technician === name &&
+    a.date === selectedDate &&
+    a.shift === selectedShift
   )
   
   const sortedScheduled = [...myScheduledActivities].sort((a, b) => {
@@ -128,7 +130,7 @@ export function TechnicianView() {
   const handleAddExtra = (e) => {
     e.preventDefault()
     if (!extraForm.description) return
-    
+
     addActivity({
       description: extraForm.description,
       sector: technician?.sector || 'Geral',
@@ -136,12 +138,12 @@ export function TechnicianView() {
       priority: extraForm.priority,
       estimatedTime: parseInt(extraForm.estimatedTime) || 0,
       status: 'extra',
-      shift: currentShift,
-      date: today,
+      shift: selectedShift,
+      date: selectedDate,
       isExtra: true,
       notes: ''
     })
-    
+
     setExtraForm({ description: '', priority: 'medium', estimatedTime: '' })
     setShowExtraForm(false)
   }
@@ -259,17 +261,43 @@ export function TechnicianView() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
-                <Badge className={getShiftBadgeColor(currentShift)}>
-                  {currentShift === 'day' ? (
-                    <><Sun className="w-3 h-3 mr-1" /> Dia</>
-                  ) : (
-                    <><Moon className="w-3 h-3 mr-1" /> Noite</>
-                  )}
-                </Badge>
-                <span className="text-sm text-slate-400 font-mono">
-                  {formatDate(new Date())}
-                </span>
+              {/* Controles de Data e Turno */}
+              <div className="flex items-center gap-2">
+                {/* Seletor de Data */}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg border border-slate-700">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="bg-transparent text-slate-200 text-sm font-mono focus:outline-none cursor-pointer"
+                  />
+                </div>
+
+                {/* Botões de Turno */}
+                <div className="flex items-center bg-slate-800 rounded-lg border border-slate-700 p-1">
+                  <button
+                    onClick={() => setSelectedShift('day')}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                      selectedShift === 'day'
+                        ? 'bg-orange-500 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Sun className="w-3 h-3" />
+                    <span className="hidden sm:inline">Dia</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedShift('night')}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                      selectedShift === 'night'
+                        ? 'bg-indigo-500 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Moon className="w-3 h-3" />
+                    <span className="hidden sm:inline">Noite</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -326,7 +354,7 @@ export function TechnicianView() {
                     Nenhuma atividade programada
                   </h3>
                   <p className="text-slate-500">
-                    Não há atividades programadas para você neste turno ({getShiftLabel(currentShift)}).
+                    Não há atividades programadas para você em {formatDate(selectedDate)} ({getShiftLabel(selectedShift)}).
                   </p>
                 </CardContent>
               </Card>
@@ -472,7 +500,7 @@ export function TechnicianView() {
                     Nenhuma atividade extra
                   </h3>
                   <p className="text-slate-500">
-                    Você ainda não registrou atividades extras para este turno.
+                    Você ainda não registrou atividades extras em {formatDate(selectedDate)} ({getShiftLabel(selectedShift)}).
                   </p>
                 </CardContent>
               </Card>
