@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Ca
 import { Button } from '../../components/ui/Button'
 import { Input, Select } from '../../components/ui/Input'
 import { Badge } from '../../components/ui/Badge'
+import { ApplyModelModal } from '../../components/modals/ApplyModelModal'
 import { 
   formatDate, 
   getShiftLabel,
@@ -12,7 +13,7 @@ import {
   getStatusColor,
   getStatusLabel
 } from '../../utils/helpers'
-import { Trash2, Plus, CalendarDays, Clock, Sun, Moon, Zap, Settings, Droplets, Gauge, FileSpreadsheet, List, User, Download } from 'lucide-react'
+import { Trash2, Plus, CalendarDays, Clock, Sun, Moon, Zap, Settings, Droplets, Gauge, FileSpreadsheet, List, User, Download, Layers, Copy, X } from 'lucide-react'
 import html2canvas from 'html2canvas'
 
 const sectorIcons = {
@@ -29,6 +30,25 @@ export function Schedule() {
   const [referenceDate, setReferenceDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedShift, setSelectedShift] = useState('night')
   const [activeSector, setActiveSector] = useState(sectors[0] || '')
+  const [activeTab, setActiveTab] = useState('schedule') // 'schedule' | 'models'
+
+  // Estado para Modelos
+  const [models, setModels] = useState(() => {
+    const saved = localStorage.getItem('maintenance-models')
+    return saved ? JSON.parse(saved) : []
+  })
+  const [showModelForm, setShowModelForm] = useState(false)
+  const [editingModel, setEditingModel] = useState(null)
+  const [showApplyModel, setShowApplyModel] = useState(false)
+  const [modelFormData, setModelFormData] = useState({
+    name: '',
+    description: '',
+    sector: sectors[0] || '',
+    shift: 'day',
+    priority: 'medium',
+    estimatedTime: '',
+    notes: ''
+  })
   
   // Atualiza o setor ativo quando os setores mudam
   useEffect(() => {
@@ -36,6 +56,60 @@ export function Schedule() {
       setActiveSector(sectors[0])
     }
   }, [sectors, activeSector])
+
+  // Persistir modelos no localStorage
+  useEffect(() => {
+    localStorage.setItem('maintenance-models', JSON.stringify(models))
+  }, [models])
+
+  // Funções para Modelos
+  const handleSaveModel = (e) => {
+    e.preventDefault()
+    if (!modelFormData.name || !modelFormData.description) return
+
+    if (editingModel) {
+      setModels(models.map(m => m.id === editingModel.id ? { ...modelFormData, id: m.id } : m))
+      setEditingModel(null)
+    } else {
+      setModels([...models, { ...modelFormData, id: Date.now() }])
+    }
+
+    setShowModelForm(false)
+    setModelFormData({
+      name: '',
+      description: '',
+      sector: sectors[0] || '',
+      shift: 'day',
+      priority: 'medium',
+      estimatedTime: '',
+      notes: ''
+    })
+  }
+
+  const handleEditModel = (model) => {
+    setModelFormData(model)
+    setEditingModel(model)
+    setShowModelForm(true)
+  }
+
+  const handleDeleteModel = (id) => {
+    setModels(models.filter(m => m.id !== id))
+  }
+
+  const handleApplyModel = (model, targetDate, targetShift, targetTechnician) => {
+    addActivity({
+      description: model.description,
+      sector: model.sector,
+      technician: targetTechnician,
+      priority: model.priority,
+      status: 'pending',
+      date: targetDate,
+      shift: targetShift,
+      estimatedTime: parseInt(model.estimatedTime) || 0,
+      notes: model.notes || ''
+    })
+    setShowApplyModel(false)
+  }
   
   const [formData, setFormData] = useState({
     description: '',
@@ -240,27 +314,55 @@ export function Schedule() {
   
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Abas dos Setores */}
-      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-        {sectors.map(sector => {
-          const Icon = sectorIcons[sector] || Settings
-          const isActive = activeSector === sector
-          return (
-            <button
-              key={sector}
-              onClick={() => setActiveSector(sector)}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                isActive
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
-                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-700'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="text-sm sm:text-base">{sector}</span>
-            </button>
-          )
-        })}
+      {/* Abas Principais: Programação / Modelos */}
+      <div className="flex gap-2 border-b border-slate-700 pb-2">
+        <button
+          onClick={() => setActiveTab('schedule')}
+          className={`flex items-center gap-2 px-4 py-2 font-medium transition-all ${
+            activeTab === 'schedule'
+              ? 'text-orange-500 border-b-2 border-orange-500'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <CalendarDays className="w-4 h-4" />
+          Programação
+        </button>
+        <button
+          onClick={() => setActiveTab('models')}
+          className={`flex items-center gap-2 px-4 py-2 font-medium transition-all ${
+            activeTab === 'models'
+              ? 'text-orange-500 border-b-2 border-orange-500'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          Modelos
+        </button>
       </div>
+
+      {activeTab === 'schedule' ? (
+        <>
+          {/* Abas dos Setores */}
+          <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+            {sectors.map(sector => {
+              const Icon = sectorIcons[sector] || Settings
+              const isActive = activeSector === sector
+              return (
+                <button
+                  key={sector}
+                  onClick={() => setActiveSector(sector)}
+                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-700'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm sm:text-base">{sector}</span>
+                </button>
+              )
+            })}
+          </div>
 
       <Card>
         <CardHeader>
@@ -588,6 +690,209 @@ Manutenção preventiva...`}
           </CardContent>
         </Card>
       </div>
+        </>
+      ) : (
+        /* ABA DE MODELOS */
+        <div className="space-y-4">
+          {/* Cabeçalho de Modelos */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="w-5 h-5 text-orange-500" />
+              <h2 className="text-lg font-semibold text-slate-200">Modelos de Atividades</h2>
+            </div>
+            <Button onClick={() => setShowModelForm(true)} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Novo Modelo
+            </Button>
+          </div>
+
+          {/* Lista de Modelos */}
+          {models.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Layers className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400 mb-2">Nenhum modelo criado ainda</p>
+                <p className="text-sm text-slate-500">Crie modelos para facilitar programações recorrentes</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {models.map(model => (
+                <Card key={model.id} className="hover:border-orange-500/30 transition-colors">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-slate-200">{model.name}</h3>
+                          <Badge className={getPriorityColor(model.priority)}>
+                            {getPriorityLabel(model.priority)}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {getShiftLabel(model.shift)}
+                          </Badge>
+                          <span className="text-xs text-slate-500">• {model.sector}</span>
+                        </div>
+                        <p className="text-slate-400 text-sm mb-2">{model.description}</p>
+                        {model.estimatedTime && (
+                          <p className="text-xs text-slate-500">
+                            <Clock className="w-3 h-3 inline mr-1" />
+                            {model.estimatedTime} minutos
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setEditingModel(model); setShowApplyModel(true); }}
+                          className="text-orange-400 hover:text-orange-300"
+                          title="Aplicar modelo"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditModel(model)}
+                          className="text-slate-400 hover:text-slate-200"
+                          title="Editar"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteModel(model.id)}
+                          className="text-slate-400 hover:text-red-400"
+                          title="Excluir"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modal: Criar/Editar Modelo */}
+      {showModelForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg max-w-md w-full p-6 border border-slate-700">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-200">
+                {editingModel ? 'Editar Modelo' : 'Novo Modelo'}
+              </h3>
+              <button
+                onClick={() => { setShowModelForm(false); setEditingModel(null); }}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveModel} className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Nome do Modelo *</label>
+                <Input
+                  value={modelFormData.name}
+                  onChange={(e) => setModelFormData({ ...modelFormData, name: e.target.value })}
+                  placeholder="Ex: Lubrificação Semanal"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Descrição da Atividade *</label>
+                <textarea
+                  value={modelFormData.description}
+                  onChange={(e) => setModelFormData({ ...modelFormData, description: e.target.value })}
+                  placeholder="Descreva a atividade..."
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 min-h-[80px]"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Setor</label>
+                  <Select
+                    value={modelFormData.sector}
+                    onChange={(e) => setModelFormData({ ...modelFormData, sector: e.target.value })}
+                    options={sectors.map(s => ({ value: s, label: s }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Turno Padrão</label>
+                  <Select
+                    value={modelFormData.shift}
+                    onChange={(e) => setModelFormData({ ...modelFormData, shift: e.target.value })}
+                    options={[
+                      { value: 'day', label: 'Dia' },
+                      { value: 'night', label: 'Noite' }
+                    ]}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Prioridade</label>
+                  <Select
+                    value={modelFormData.priority}
+                    onChange={(e) => setModelFormData({ ...modelFormData, priority: e.target.value })}
+                    options={[
+                      { value: 'low', label: 'Baixa' },
+                      { value: 'medium', label: 'Média' },
+                      { value: 'high', label: 'Alta' }
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1">Tempo Estimado (min)</label>
+                  <Input
+                    type="number"
+                    value={modelFormData.estimatedTime}
+                    onChange={(e) => setModelFormData({ ...modelFormData, estimatedTime: e.target.value })}
+                    placeholder="Ex: 60"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Observações</label>
+                <textarea
+                  value={modelFormData.notes}
+                  onChange={(e) => setModelFormData({ ...modelFormData, notes: e.target.value })}
+                  placeholder="Notas adicionais..."
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" className="flex-1">
+                  {editingModel ? 'Salvar Alterações' : 'Criar Modelo'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => { setShowModelForm(false); setEditingModel(null); }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Aplicar Modelo */}
+      {showApplyModel && editingModel && (
+        <ApplyModelModal
+          model={editingModel}
+          sectors={sectors}
+          technicians={technicians}
+          onApply={handleApplyModel}
+          onClose={() => { setShowApplyModel(false); setEditingModel(null); }}
+        />
+      )}
     </div>
   )
 }
