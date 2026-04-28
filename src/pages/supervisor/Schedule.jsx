@@ -88,20 +88,32 @@ export function Schedule() {
   }
 
   const handleApplyModel = (model, targetDate, targetShift, targetTechnician) => {
-    addActivity({
-      description: model.description,
-      sector: model.sector,
-      technician: targetTechnician,
-      priority: model.priority,
-      status: 'pending',
-      date: targetDate,
-      shift: targetShift,
-      estimatedTime: parseInt(model.estimatedTime) || 0,
-      notes: model.notes || ''
+    // Divide a descrição em múltiplas atividades (uma por linha não vazia)
+    const activitiesList = model.description
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+
+    // Cria uma atividade para cada linha
+    activitiesList.forEach((activityDescription, index) => {
+      addActivity({
+        description: activityDescription,
+        sector: model.sector,
+        technician: targetTechnician,
+        priority: model.priority,
+        status: 'pending',
+        date: targetDate,
+        shift: targetShift,
+        estimatedTime: parseInt(model.estimatedTime) || 0,
+        isExtra: false,
+        notes: index === 0 ? (model.notes || '') : '' // Só a primeira atividade tem as notas do modelo
+      })
     })
+
     setShowApplyModel(false)
+    setEditingModel(null)
   }
-  
+
   const [formData, setFormData] = useState({
     description: '',
     sector: '',
@@ -795,12 +807,15 @@ Manutenção preventiva...`}
                 />
               </div>
               <div>
-                <label className="block text-sm text-slate-400 mb-1">Descrição da Atividade *</label>
+                <label className="block text-sm text-slate-400 mb-1">
+                  Descrição das Atividades *
+                  <span className="text-xs text-slate-500 ml-1">(uma atividade por linha)</span>
+                </label>
                 <textarea
                   value={modelFormData.description}
                   onChange={(e) => setModelFormData({ ...modelFormData, description: e.target.value })}
-                  placeholder="Descreva a atividade..."
-                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 min-h-[80px]"
+                  placeholder="Ex:\nLubrificar rolamentos\nVerificar tensão da correia\nLimpar filtros"
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50 min-h-[120px]"
                   required
                 />
               </div>

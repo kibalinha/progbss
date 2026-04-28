@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Button } from '../ui/Button'
 import { Input, Select } from '../ui/Input'
-import { X, Copy, CalendarDays, Clock, User } from 'lucide-react'
+import { X, Copy, CalendarDays, Clock, User, List } from 'lucide-react'
 import { formatDate, getShiftLabel, getPriorityLabel, getPriorityColor } from '../../utils/helpers'
 
 export function ApplyModelModal({ model, sectors, technicians, onApply, onClose }) {
@@ -9,6 +9,14 @@ export function ApplyModelModal({ model, sectors, technicians, onApply, onClose 
   const [targetShift, setTargetShift] = useState(model.shift || 'day')
   const [targetTechnician, setTargetTechnician] = useState('')
   const [targetSector, setTargetSector] = useState(model.sector || sectors[0] || '')
+
+  // Extrai lista de atividades do modelo
+  const activitiesList = useMemo(() => {
+    return model.description
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+  }, [model.description])
 
   const availableTechnicians = useMemo(() => {
     return technicians.filter(t =>
@@ -25,7 +33,7 @@ export function ApplyModelModal({ model, sectors, technicians, onApply, onClose 
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg max-w-md w-full p-6 border border-slate-700">
+      <div className="bg-slate-800 rounded-lg max-w-md w-full p-6 border border-slate-700 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-200">Aplicar Modelo</h3>
           <button
@@ -39,8 +47,7 @@ export function ApplyModelModal({ model, sectors, technicians, onApply, onClose 
         {/* Preview do Modelo */}
         <div className="bg-slate-700/50 rounded-lg p-4 mb-4 border border-slate-600">
           <h4 className="font-medium text-slate-200 mb-2">{model.name}</h4>
-          <p className="text-sm text-slate-400 mb-2">{model.description}</p>
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs mb-3">
             <span className={`px-2 py-1 rounded ${getPriorityColor(model.priority)}`}>
               {getPriorityLabel(model.priority)}
             </span>
@@ -49,9 +56,27 @@ export function ApplyModelModal({ model, sectors, technicians, onApply, onClose 
             {model.estimatedTime && (
               <>
                 <span className="text-slate-500">•</span>
-                <span className="text-slate-400">{model.estimatedTime}min</span>
+                <span className="text-slate-400">{model.estimatedTime}min/atividade</span>
               </>
             )}
+          </div>
+
+          {/* Lista de atividades que serão criadas */}
+          <div className="border-t border-slate-600 pt-3">
+            <div className="flex items-center gap-2 mb-2">
+              <List className="w-4 h-4 text-orange-400" />
+              <span className="text-sm font-medium text-slate-300">
+                {activitiesList.length} atividade{activitiesList.length !== 1 ? 's' : ''} serão criadas:
+              </span>
+            </div>
+            <ul className="space-y-1 max-h-[120px] overflow-y-auto">
+              {activitiesList.map((activity, idx) => (
+                <li key={idx} className="text-sm text-slate-400 pl-6 relative">
+                  <span className="absolute left-2 text-slate-500">{idx + 1}.</span>
+                  {activity}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
@@ -121,7 +146,7 @@ export function ApplyModelModal({ model, sectors, technicians, onApply, onClose 
               disabled={!targetTechnician}
             >
               <Copy className="w-4 h-4" />
-              Aplicar Modelo
+              Aplicar ({activitiesList.length} ativ.{activitiesList.length !== 1 ? '' : ''})
             </Button>
             <Button
               type="button"

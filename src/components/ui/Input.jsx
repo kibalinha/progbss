@@ -48,14 +48,15 @@ export const Select = forwardRef(function Select({
   label,
   id,
   children,
+  options,
   ...props
 }, ref) {
   const selectId = id || label?.toLowerCase().replace(/\s+/g, '-')
-  
+
   return (
     <div className="w-full">
       {label && (
-        <label 
+        <label
           htmlFor={selectId}
           className="block text-sm font-medium text-slate-300 mb-1"
         >
@@ -66,7 +67,7 @@ export const Select = forwardRef(function Select({
         ref={ref}
         id={selectId}
         className={`
-          w-full px-3 py-2 
+          w-full px-3 py-2
           bg-slate-700 border border-slate-600 rounded-md
           text-slate-100
           focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500
@@ -77,7 +78,13 @@ export const Select = forwardRef(function Select({
         `}
         {...props}
       >
-        {children}
+        {options ? (
+          options.map((opt, idx) => (
+            <option key={idx} value={opt.value}>{opt.label}</option>
+          ))
+        ) : (
+          children
+        )}
       </select>
       {error && (
         <p className="mt-1 text-sm text-red-400">
