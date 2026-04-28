@@ -94,9 +94,10 @@ export function Schedule() {
       .map(line => line.trim())
       .filter(line => line.length > 0)
 
-    // Cria uma atividade para cada linha
+    // Cria uma atividade para cada linha com ID único
     activitiesList.forEach((activityDescription, index) => {
       addActivity({
+        id: Date.now() + index, // ID único para cada atividade
         description: activityDescription,
         sector: model.sector,
         technician: targetTechnician,
