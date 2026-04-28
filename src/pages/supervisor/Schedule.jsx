@@ -24,19 +24,15 @@ const sectorIcons = {
 }
 
 export function Schedule() {
-  const { sectors, technicians, activities, addActivity, removeActivity } = useApp()
+  const { sectors, technicians, activities, models, addActivity, removeActivity, addModel, updateModel, removeModel } = useApp()
   const activitiesRef = useRef(null)
-  
+
   const [referenceDate, setReferenceDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedShift, setSelectedShift] = useState('night')
   const [activeSector, setActiveSector] = useState(sectors[0] || '')
   const [activeTab, setActiveTab] = useState('schedule') // 'schedule' | 'models'
 
   // Estado para Modelos
-  const [models, setModels] = useState(() => {
-    const saved = localStorage.getItem('maintenance-models')
-    return saved ? JSON.parse(saved) : []
-  })
   const [showModelForm, setShowModelForm] = useState(false)
   const [editingModel, setEditingModel] = useState(null)
   const [showApplyModel, setShowApplyModel] = useState(false)
@@ -57,21 +53,16 @@ export function Schedule() {
     }
   }, [sectors, activeSector])
 
-  // Persistir modelos no localStorage
-  useEffect(() => {
-    localStorage.setItem('maintenance-models', JSON.stringify(models))
-  }, [models])
-
   // Funções para Modelos
-  const handleSaveModel = (e) => {
+  const handleSaveModel = async (e) => {
     e.preventDefault()
     if (!modelFormData.name || !modelFormData.description) return
 
     if (editingModel) {
-      setModels(models.map(m => m.id === editingModel.id ? { ...modelFormData, id: m.id } : m))
+      await updateModel({ ...modelFormData, id: editingModel.id })
       setEditingModel(null)
     } else {
-      setModels([...models, { ...modelFormData, id: Date.now() }])
+      await addModel(modelFormData)
     }
 
     setShowModelForm(false)
@@ -92,8 +83,8 @@ export function Schedule() {
     setShowModelForm(true)
   }
 
-  const handleDeleteModel = (id) => {
-    setModels(models.filter(m => m.id !== id))
+  const handleDeleteModel = async (id) => {
+    await removeModel(id)
   }
 
   const handleApplyModel = (model, targetDate, targetShift, targetTechnician) => {

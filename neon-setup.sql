@@ -36,6 +36,19 @@ CREATE TABLE activities (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Criar tabela de modelos (templates)
+CREATE TABLE models (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    sector VARCHAR(100) REFERENCES sectors(name) ON DELETE SET NULL,
+    shift VARCHAR(10) CHECK (shift IN ('day', 'night')),
+    priority VARCHAR(20) CHECK (priority IN ('low', 'medium', 'high')),
+    estimated_time INTEGER DEFAULT 0,
+    notes TEXT DEFAULT '',
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Inserir setores iniciais
 INSERT INTO sectors (name) VALUES 
     ('Elétrica'),

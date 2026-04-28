@@ -27,6 +27,7 @@ const initialState = {
   sectors: savedData?.sectors || initialSectors,
   technicians: savedData?.technicians || initialTechnicians,
   activities: savedData?.activities || initialActivities,
+  models: [],
   currentUser: savedData?.currentUser || null
 }
 
@@ -36,18 +37,21 @@ function appReducer(state, action) {
       console.log('[SET_DATA] Received payload:', {
         sectors: action.payload.sectors?.length,
         technicians: action.payload.technicians?.length,
-        activities: action.payload.activities?.length
+        activities: action.payload.activities?.length,
+        models: action.payload.models?.length
       })
       console.log('[SET_DATA] Current state:', {
         sectors: state.sectors.length,
         technicians: state.technicians.length,
-        activities: state.activities.length
+        activities: state.activities.length,
+        models: state.models?.length || 0
       })
       return {
         ...state,
         sectors: action.payload.sectors || state.sectors,
         technicians: action.payload.technicians || state.technicians,
-        activities: action.payload.activities || state.activities
+        activities: action.payload.activities || state.activities,
+        models: action.payload.models || state.models
       }
     
     case 'ADD_SECTOR':
@@ -110,7 +114,33 @@ function appReducer(state, action) {
             : a
         )
       }
-    
+
+    case 'SET_MODELS':
+      return {
+        ...state,
+        models: action.payload
+      }
+
+    case 'ADD_MODEL':
+      return {
+        ...state,
+        models: [...state.models, action.payload]
+      }
+
+    case 'UPDATE_MODEL':
+      return {
+        ...state,
+        models: state.models.map(m =>
+          m.id === action.payload.id ? action.payload : m
+        )
+      }
+
+    case 'REMOVE_MODEL':
+      return {
+        ...state,
+        models: state.models.filter(m => m.id !== action.payload)
+      }
+
     case 'LOGIN':
       return { ...state, currentUser: action.payload }
     
@@ -130,24 +160,27 @@ export function AppProvider({ children }) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [sectorsRes, techniciansRes, activitiesRes] = await Promise.all([
+        const [sectorsRes, techniciansRes, activitiesRes, modelsRes] = await Promise.all([
           fetch(`${API_BASE}/sectors`),
           fetch(`${API_BASE}/technicians`),
-          fetch(`${API_BASE}/activities`)
+          fetch(`${API_BASE}/activities`),
+          fetch(`${API_BASE}/models`)
         ])
 
         const sectors = await sectorsRes.json()
         const technicians = await techniciansRes.json()
         const activities = await activitiesRes.json()
+        const models = await modelsRes.json()
 
         console.log('[fetchData] Fetched from API:', {
           sectors: sectors.length,
           technicians: technicians.length,
-          activities: activities.length
+          activities: activities.length,
+          models: models.length
         })
         console.log('[fetchData] Activities:', activities.map(a => ({ id: a.id, sector: a.sector, date: a.date })))
 
-        dispatch({ type: 'SET_DATA', payload: { sectors, technicians, activities } })
+        dispatch({ type: 'SET_DATA', payload: { sectors, technicians, activities, models } })
       } catch (error) {
         console.error('Error fetching data from API:', error)
         // Fall back to localStorage if API fails
@@ -301,6 +334,65 @@ export function AppProvider({ children }) {
     }
   }
 
+  // Funções para Modelos
+  const addModel = async (model) => {
+    try {
+      const res = await fetch(`${API_BASE}/models`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: model.name,
+          description: model.description,
+          sector: model.sector,
+          shift: model.shift,
+          priority: model.priority,
+          estimatedTime: parseInt(model.estimatedTime) || 0,
+          notes: model.notes || ''
+        })
+      })
+      const result = await res.json()
+      dispatch({ type: 'ADD_MODEL', payload: result })
+    } catch (error) {
+      console.error('Error adding model:', error)
+    }
+  }
+
+  const updateModel = async (model) => {
+    try {
+      const res = await fetch(`${API_BASE}/models`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: model.id,
+          name: model.name,
+          description: model.description,
+          sector: model.sector,
+          shift: model.shift,
+          priority: model.priority,
+          estimatedTime: parseInt(model.estimatedTime) || 0,
+          notes: model.notes || ''
+        })
+      })
+      const result = await res.json()
+      dispatch({ type: 'UPDATE_MODEL', payload: result })
+    } catch (error) {
+      console.error('Error updating model:', error)
+    }
+  }
+
+  const removeModel = async (id) => {
+    try {
+      await fetch(`${API_BASE}/models`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      dispatch({ type: 'REMOVE_MODEL', payload: id })
+    } catch (error) {
+      console.error('Error removing model:', error)
+    }
+  }
+
   const value = {
     ...state,
     loading,
@@ -311,6 +403,9 @@ export function AppProvider({ children }) {
     addActivity,
     removeActivity,
     updateActivityStatus,
+    addModel,
+    updateModel,
+    removeModel,
     login: (user) => dispatch({ type: 'LOGIN', payload: user }),
     logout: () => dispatch({ type: 'LOGOUT' }),
     resetData: () => {
