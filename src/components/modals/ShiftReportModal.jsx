@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Button } from '../ui/Button'
-import { X, Copy, Download, FileText, AlertCircle, Clock, CheckCircle2, XCircle, Building2 } from 'lucide-react'
+import { X, Copy, Download, FileText, AlertCircle, Clock, CheckCircle2, XCircle, Building2, Star } from 'lucide-react'
 import { formatDate, getShiftLabel } from '../../utils/helpers'
 
 export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, shift }) {
@@ -29,16 +29,19 @@ export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, s
     const notDoneActivities = filteredActivities.filter(a => a.status === 'not_done')
     const pendingActivities = filteredActivities.filter(a => a.status === 'pending')
     const inProgressActivities = filteredActivities.filter(a => a.status === 'in_progress')
+    const completedActivities = filteredActivities.filter(a => a.status === 'completed')
+    const extraActivities = filteredActivities.filter(a => a.isExtra)
 
     const totals = {
       total: filteredActivities.length,
-      completed: filteredActivities.filter(a => a.status === 'completed').length,
+      completed: completedActivities.length,
       pending: pendingActivities.length,
       inProgress: inProgressActivities.length,
-      notDone: notDoneActivities.length
+      notDone: notDoneActivities.length,
+      extras: extraActivities.length
     }
 
-    return { sectorStats, notDoneActivities, pendingActivities, inProgressActivities, totals, selectedSector }
+    return { sectorStats, notDoneActivities, pendingActivities, inProgressActivities, completedActivities, extraActivities, totals, selectedSector }
   }, [activities, sectors, date, shift, selectedSector])
 
   // Generate formatted text report
@@ -79,8 +82,24 @@ export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, s
       })
     }
 
+    if (report.completedActivities.length > 0) {
+      lines.push('')
+      lines.push('✅ ATIVIDADES CONCLUÍDAS:')
+      report.completedActivities.forEach((a, i) => {
+        lines.push(`${i + 1}. [${a.sector}] ${a.description} - ${a.technician}`)
+      })
+    }
+
+    if (report.extraActivities.length > 0) {
+      lines.push('')
+      lines.push('⭐ ATIVIDADES EXTRAS:')
+      report.extraActivities.forEach((a, i) => {
+        lines.push(`${i + 1}. [${a.sector}] ${a.description} - ${a.technician}`)
+      })
+    }
+
     lines.push('')
-    lines.push(`📊 TOTAL GERAL: ${report.totals.total} atividades | ✅ ${report.totals.completed} concluídas | ⏳ ${report.totals.pending} pendentes | 🔄 ${report.totals.inProgress} em andamento | ❌ ${report.totals.notDone} não feitas`)
+    lines.push(`📊 TOTAL GERAL: ${report.totals.total} atividades | ✅ ${report.totals.completed} concluídas | ⏳ ${report.totals.pending} pendentes | 🔄 ${report.totals.inProgress} em andamento | ❌ ${report.totals.notDone} não feitas | ⭐ ${report.totals.extras} extras`)
 
     return lines.join('\n')
   }, [report, date, shift])
@@ -250,6 +269,46 @@ export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, s
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Completed Activities */}
+          {report.completedActivities.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                Atividades Concluídas ({report.completedActivities.length})
+              </h3>
+              <div className="space-y-1">
+                {report.completedActivities.slice(0, 5).map(a => (
+                  <div key={a.id} className="p-2 bg-green-500/10 border border-green-500/20 rounded text-sm text-slate-300">
+                    <span className="text-slate-400">[{a.sector}]</span> {a.description} - <span className="text-slate-500">{a.technician}</span>
+                  </div>
+                ))}
+                {report.completedActivities.length > 5 && (
+                  <p className="text-xs text-slate-500 pl-2">...e mais {report.completedActivities.length - 5} atividades concluídas</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Extra Activities */}
+          {report.extraActivities.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4 text-purple-500" />
+                Atividades Extras ({report.extraActivities.length})
+              </h3>
+              <div className="space-y-1">
+                {report.extraActivities.slice(0, 5).map(a => (
+                  <div key={a.id} className="p-2 bg-purple-500/10 border border-purple-500/20 rounded text-sm text-slate-300">
+                    <span className="text-slate-400">[{a.sector}]</span> {a.description} - <span className="text-slate-500">{a.technician}</span>
+                  </div>
+                ))}
+                {report.extraActivities.length > 5 && (
+                  <p className="text-xs text-slate-500 pl-2">...e mais {report.extraActivities.length - 5} atividades extras</p>
+                )}
+              </div>
             </div>
           )}
 
