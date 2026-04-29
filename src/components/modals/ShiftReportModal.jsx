@@ -1,13 +1,18 @@
 import { useState, useMemo } from 'react'
 import { Button } from '../ui/Button'
-import { X, Copy, Download, FileText, AlertCircle, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { X, Copy, Download, FileText, AlertCircle, Clock, CheckCircle2, XCircle, Building2 } from 'lucide-react'
 import { formatDate, getShiftLabel } from '../../utils/helpers'
 
 export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, shift }) {
   const [copied, setCopied] = useState(false)
+  const [selectedSector, setSelectedSector] = useState('all')
 
-  // Calculate statistics
+  // Calculate statistics (filtered by sector if selected)
   const report = useMemo(() => {
+    const filteredActivities = selectedSector === 'all'
+      ? activities.filter(a => a.date === date && a.shift === shift)
+      : activities.filter(a => a.date === date && a.shift === shift && a.sector === selectedSector)
+
     const sectorStats = sectors.map(sector => {
       const sectorActivities = activities.filter(a => a.sector === sector && a.shift === shift && a.date === date)
       return {
@@ -21,25 +26,27 @@ export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, s
       }
     }).filter(s => s.total > 0)
 
-    const notDoneActivities = activities.filter(a => a.date === date && a.shift === shift && a.status === 'not_done')
-    const pendingActivities = activities.filter(a => a.date === date && a.shift === shift && a.status === 'pending')
-    const inProgressActivities = activities.filter(a => a.date === date && a.shift === shift && a.status === 'in_progress')
+    const notDoneActivities = filteredActivities.filter(a => a.status === 'not_done')
+    const pendingActivities = filteredActivities.filter(a => a.status === 'pending')
+    const inProgressActivities = filteredActivities.filter(a => a.status === 'in_progress')
 
     const totals = {
-      total: activities.filter(a => a.date === date && a.shift === shift).length,
-      completed: activities.filter(a => a.date === date && a.shift === shift && a.status === 'completed').length,
+      total: filteredActivities.length,
+      completed: filteredActivities.filter(a => a.status === 'completed').length,
       pending: pendingActivities.length,
       inProgress: inProgressActivities.length,
       notDone: notDoneActivities.length
     }
 
-    return { sectorStats, notDoneActivities, pendingActivities, inProgressActivities, totals }
-  }, [activities, sectors, date, shift])
+    return { sectorStats, notDoneActivities, pendingActivities, inProgressActivities, totals, selectedSector }
+  }, [activities, sectors, date, shift, selectedSector])
 
   // Generate formatted text report
   const textReport = useMemo(() => {
+    const sectorTitle = selectedSector === 'all' ? 'TODOS OS SETORES' : selectedSector.toUpperCase()
     const lines = [
       `📊 RELATÓRIO DO TURNO - ${formatDate(date)} - ${getShiftLabel(shift)}`,
+      `🏭 SETOR: ${sectorTitle}`,
       '',
       '📈 RESUMO POR SETOR:'
     ]
@@ -93,7 +100,8 @@ export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, s
     const blob = new Blob([textReport], { type: 'text/plain;charset=utf-8' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `relatorio-${date}-${shift}.txt`
+    const sectorSuffix = selectedSector === 'all' ? 'todos' : selectedSector.toLowerCase().replace(/\s+/g, '-')
+    link.download = `relatorio-${date}-${shift}-${sectorSuffix}.txt`
     link.click()
   }
 
@@ -106,7 +114,12 @@ export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, s
         <div className="flex items-center justify-between p-6 border-b border-slate-700 bg-slate-900/50">
           <div className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-orange-500" />
-            <h2 className="text-xl font-semibold text-slate-100">Relatório do Turno</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-100">Relatório do Turno</h2>
+              <p className="text-sm text-slate-400">
+                {formatDate(date)} • {getShiftLabel(shift)} • {selectedSector === 'all' ? 'Todos os Setores' : selectedSector}
+              </p>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -118,6 +131,39 @@ export function ShiftReportModal({ isOpen, onClose, activities, sectors, date, s
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
+          {/* Sector Selector */}
+          <div className="mb-6">
+            <label className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Selecionar Setor:
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedSector('all')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  selectedSector === 'all'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                Todos os Setores
+              </button>
+              {sectors.map(sector => (
+                <button
+                  key={sector}
+                  onClick={() => setSelectedSector(sector)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    selectedSector === sector
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                >
+                  {sector}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Stats Cards */}
           <div className="grid grid-cols-5 gap-3 mb-6">
             <div className="bg-slate-700/50 p-3 rounded-lg text-center">
