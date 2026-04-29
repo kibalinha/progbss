@@ -2,22 +2,25 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
+import { Button } from '../../components/ui/Button'
 import { BarChartTechnicians } from '../../components/charts/BarChartTechnicians'
 import { PieChartStatus } from '../../components/charts/PieChartStatus'
-import { 
-  formatDate, 
-  getShiftLabel, 
-  getStatusColor, 
+import { ShiftReportModal } from '../../components/modals/ShiftReportModal'
+import {
+  formatDate,
+  getShiftLabel,
+  getStatusColor,
   getStatusLabel,
   getPriorityColor,
   getPriorityLabel
 } from '../../utils/helpers'
-import { ClipboardList, CheckCircle2, Clock, AlertCircle, CalendarDays, Sun, Moon, XCircle, Star } from 'lucide-react'
+import { ClipboardList, CheckCircle2, Clock, AlertCircle, CalendarDays, Sun, Moon, XCircle, Star, FileText } from 'lucide-react'
 
 export function Dashboard() {
-  const { activities, technicians } = useApp()
+  const { activities, technicians, sectors } = useApp()
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedShift, setSelectedShift] = useState('all')
+  const [showReportModal, setShowReportModal] = useState(false)
   
   const filteredActivities = useMemo(() => {
     return activities.filter(a => {
@@ -61,8 +64,8 @@ export function Dashboard() {
             <button
               onClick={() => setSelectedShift('all')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                selectedShift === 'all' 
-                  ? 'bg-orange-500 text-white' 
+                selectedShift === 'all'
+                  ? 'bg-orange-500 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -71,8 +74,8 @@ export function Dashboard() {
             <button
               onClick={() => setSelectedShift('day')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
-                selectedShift === 'day' 
-                  ? 'bg-orange-500 text-white' 
+                selectedShift === 'day'
+                  ? 'bg-orange-500 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -82,8 +85,8 @@ export function Dashboard() {
             <button
               onClick={() => setSelectedShift('night')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-1.5 ${
-                selectedShift === 'night' 
-                  ? 'bg-orange-500 text-white' 
+                selectedShift === 'night'
+                  ? 'bg-orange-500 text-white'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -91,6 +94,18 @@ export function Dashboard() {
               Noite
             </button>
           </div>
+
+          {/* Botão Gerar Relatório */}
+          {selectedShift !== 'all' && (
+            <Button
+              onClick={() => setShowReportModal(true)}
+              variant="secondary"
+              className="flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Gerar Relatório
+            </Button>
+          )}
         </div>
       </div>
       
@@ -256,6 +271,16 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Relatório */}
+      <ShiftReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        activities={activities}
+        sectors={sectors}
+        date={selectedDate}
+        shift={selectedShift}
+      />
     </div>
   )
 }
