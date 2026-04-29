@@ -216,97 +216,117 @@ export function Schedule() {
 
   const handleExportImage = async () => {
     if (!activitiesRef.current) return
-    
+
     try {
+      // Determinar layout baseado na quantidade de atividades
+      const activityCount = scheduledActivities.length
+      const useTwoColumns = activityCount > 10
+      const containerWidth = useTwoColumns ? 1400 : 800
+
       // Criar container temporário para exportação
       const exportContainer = document.createElement('div')
       exportContainer.style.cssText = `
         position: fixed;
         top: -9999px;
         left: -9999px;
-        width: 800px;
-        padding: 30px;
-        background: #0f172a;
+        width: ${containerWidth}px;
+        padding: 40px;
+        background: #ffffff;
         font-family: system-ui, -apple-system, sans-serif;
       `
-      
+
+      // Cores
+      const priorityColors = {
+        high: '#dc2626',
+        medium: '#ea580c',
+        low: '#16a34a'
+      }
+
+      const statusColors = {
+        pending: '#64748b',
+        in_progress: '#2563eb',
+        completed: '#16a34a',
+        not_done: '#dc2626',
+        extra: '#9333ea'
+      }
+
       // Cabeçalho
       const header = document.createElement('div')
       header.style.cssText = `
-        margin-bottom: 20px;
+        margin-bottom: 30px;
         padding-bottom: 20px;
-        border-bottom: 2px solid #f97316;
+        border-bottom: 3px solid #ea580c;
+        text-align: center;
       `
       header.innerHTML = `
-        <h1 style="color: #f97316; font-size: 28px; margin: 0 0 10px 0; font-weight: bold;">Programação - ${activeSector}</h1>
-        <p style="color: #94a3b8; font-size: 16px; margin: 0;">${formatDate(referenceDate)} • Turno ${getShiftLabel(selectedShift)}</p>
-        <p style="color: #64748b; font-size: 14px; margin: 5px 0 0 0;">${scheduledActivities.length} atividade${scheduledActivities.length !== 1 ? 's' : ''}</p>
+        <h1 style="color: #1e293b; font-size: 32px; margin: 0 0 12px 0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Programação - ${activeSector}</h1>
+        <p style="color: #475569; font-size: 20px; margin: 0; font-weight: 500;">${formatDate(referenceDate)} • ${getShiftLabel(selectedShift)}</p>
+        <p style="color: #64748b; font-size: 16px; margin: 8px 0 0 0;">${activityCount} atividade${activityCount !== 1 ? 's' : ''}</p>
       `
-      
       exportContainer.appendChild(header)
-      
+
+      // Container para atividades (grid ou coluna única)
+      const activitiesContainer = document.createElement('div')
+      activitiesContainer.style.cssText = useTwoColumns
+        ? 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px;'
+        : 'display: flex; flex-direction: column; gap: 12px;'
+      exportContainer.appendChild(activitiesContainer)
+
       // Lista de atividades
       scheduledActivities.forEach((activity, index) => {
         const item = document.createElement('div')
         item.style.cssText = `
-          padding: 15px;
-          margin-bottom: 12px;
-          background: #1e293b;
+          padding: 16px;
+          background: #f8fafc;
           border-radius: 8px;
-          border-left: 4px solid ${activity.priority === 'high' ? '#ef4444' : activity.priority === 'medium' ? '#f97316' : '#22c55e'};
+          border: 2px solid ${priorityColors[activity.priority]};
+          border-left: 6px solid ${priorityColors[activity.priority]};
+          break-inside: avoid;
         `
-        
-        const priorityColors = {
-          high: '#ef4444',
-          medium: '#f97316',
-          low: '#22c55e'
-        }
-        
-        const statusColors = {
-          pending: '#64748b',
-          in_progress: '#3b82f6',
-          completed: '#22c55e',
-          not_done: '#ef4444',
-          extra: '#a855f7'
-        }
-        
+
         item.innerHTML = `
-          <div style="color: #f1f5f9; font-size: 16px; font-weight: 600; margin-bottom: 8px;">${index + 1}. ${activity.description}</div>
-          <div style="color: #94a3b8; font-size: 14px; margin-bottom: 6px;">👤 ${activity.technician} ${activity.estimatedTime > 0 ? `⏱️ ${activity.estimatedTime}min` : ''}</div>
+          <div style="color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 10px; line-height: 1.3;">
+            ${index + 1}. ${activity.description}
+          </div>
+          <div style="color: #475569; font-size: 15px; margin-bottom: 10px; font-weight: 500;">
+            👤 ${activity.technician}${activity.estimatedTime > 0 ? ` • ⏱️ ${activity.estimatedTime} min` : ''}
+          </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <span style="color: ${priorityColors[activity.priority]}; font-size: 12px; padding: 4px 8px; background: ${priorityColors[activity.priority]}20; border-radius: 4px; font-weight: 500;">${getPriorityLabel(activity.priority)}</span>
-            <span style="color: ${statusColors[activity.status]}; font-size: 12px; padding: 4px 8px; background: ${statusColors[activity.status]}20; border-radius: 4px; font-weight: 500;">${getStatusLabel(activity.status)}</span>
+            <span style="color: #ffffff; font-size: 13px; padding: 5px 10px; background: ${priorityColors[activity.priority]}; border-radius: 4px; font-weight: 600; text-transform: uppercase;">${getPriorityLabel(activity.priority)}</span>
+            <span style="color: #ffffff; font-size: 13px; padding: 5px 10px; background: ${statusColors[activity.status]}; border-radius: 4px; font-weight: 600; text-transform: uppercase;">${getStatusLabel(activity.status)}</span>
           </div>
         `
-        
-        exportContainer.appendChild(item)
+
+        activitiesContainer.appendChild(item)
       })
-      
+
       // Rodapé
       const footer = document.createElement('div')
       footer.style.cssText = `
-        margin-top: 20px;
+        margin-top: 30px;
         padding-top: 20px;
-        border-top: 1px solid #334155;
+        border-top: 2px solid #e2e8f0;
         text-align: center;
         color: #64748b;
-        font-size: 12px;
+        font-size: 14px;
       `
       footer.innerHTML = 'Sistema de Manutenção Industrial'
       exportContainer.appendChild(footer)
-      
+
       document.body.appendChild(exportContainer)
-      
+
       const canvas = await html2canvas(exportContainer, {
-        backgroundColor: '#0f172a',
+        backgroundColor: '#ffffff',
         scale: 2,
         logging: false,
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
+        width: containerWidth + 80,
+        height: exportContainer.offsetHeight + 80
       })
-      
+
       document.body.removeChild(exportContainer)
-      
+
       const link = document.createElement('a')
       link.download = `programacao-${activeSector}-${formatDate(referenceDate)}.png`
       link.href = canvas.toDataURL('image/png')
