@@ -218,7 +218,15 @@ export function Schedule() {
     if (!activitiesRef.current) return
 
     try {
-      // Determinar layout baseado na quantidade de atividades
+      // Agrupar atividades por técnico
+      const activitiesByTechnician = scheduledActivities.reduce((acc, activity) => {
+        const tech = activity.technician
+        if (!acc[tech]) acc[tech] = []
+        acc[tech].push(activity)
+        return acc
+      }, {})
+
+      const techniciansList = Object.keys(activitiesByTechnician).sort()
       const activityCount = scheduledActivities.length
       const useTwoColumns = activityCount > 10
       const containerWidth = useTwoColumns ? 1400 : 800
@@ -261,43 +269,78 @@ export function Schedule() {
       header.innerHTML = `
         <h1 style="color: #1e293b; font-size: 32px; margin: 0 0 12px 0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Programação - ${activeSector}</h1>
         <p style="color: #475569; font-size: 20px; margin: 0; font-weight: 500;">${formatDate(referenceDate)} • ${getShiftLabel(selectedShift)}</p>
-        <p style="color: #64748b; font-size: 16px; margin: 8px 0 0 0;">${activityCount} atividade${activityCount !== 1 ? 's' : ''}</p>
+        <p style="color: #64748b; font-size: 16px; margin: 8px 0 0 0;">${activityCount} atividade${activityCount !== 1 ? 's' : ''} • ${techniciansList.length} técnico${techniciansList.length !== 1 ? 's' : ''}</p>
       `
       exportContainer.appendChild(header)
 
-      // Container para atividades (grid ou coluna única)
-      const activitiesContainer = document.createElement('div')
-      activitiesContainer.style.cssText = useTwoColumns
-        ? 'display: grid; grid-template-columns: 1fr 1fr; gap: 16px;'
-        : 'display: flex; flex-direction: column; gap: 12px;'
-      exportContainer.appendChild(activitiesContainer)
+      // Container principal para atividades agrupadas
+      const mainContainer = document.createElement('div')
+      mainContainer.style.cssText = useTwoColumns
+        ? 'display: grid; grid-template-columns: 1fr 1fr; gap: 24px;'
+        : 'display: flex; flex-direction: column; gap: 20px;'
+      exportContainer.appendChild(mainContainer)
 
-      // Lista de atividades
-      scheduledActivities.forEach((activity, index) => {
-        const item = document.createElement('div')
-        item.style.cssText = `
+      // Para cada técnico, criar uma seção
+      techniciansList.forEach(techName => {
+        const techActivities = activitiesByTechnician[techName]
+
+        // Container do técnico
+        const techContainer = document.createElement('div')
+        techContainer.style.cssText = `
+          background: #f1f5f9;
+          border-radius: 12px;
           padding: 16px;
-          background: #f8fafc;
-          border-radius: 8px;
-          border: 2px solid ${priorityColors[activity.priority]};
-          border-left: 6px solid ${priorityColors[activity.priority]};
+          border: 2px solid #e2e8f0;
           break-inside: avoid;
         `
 
-        item.innerHTML = `
-          <div style="color: #0f172a; font-size: 18px; font-weight: 700; margin-bottom: 10px; line-height: 1.3;">
-            ${index + 1}. ${activity.description}
-          </div>
-          <div style="color: #475569; font-size: 15px; margin-bottom: 10px; font-weight: 500;">
-            👤 ${activity.technician}${activity.estimatedTime > 0 ? ` • ⏱️ ${activity.estimatedTime} min` : ''}
-          </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <span style="color: #ffffff; font-size: 13px; padding: 5px 10px; background: ${priorityColors[activity.priority]}; border-radius: 4px; font-weight: 600; text-transform: uppercase;">${getPriorityLabel(activity.priority)}</span>
-            <span style="color: #ffffff; font-size: 13px; padding: 5px 10px; background: ${statusColors[activity.status]}; border-radius: 4px; font-weight: 600; text-transform: uppercase;">${getStatusLabel(activity.status)}</span>
-          </div>
+        // Cabeçalho do técnico
+        const techHeader = document.createElement('div')
+        techHeader.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid #cbd5e1;
         `
+        techHeader.innerHTML = `
+          <span style="font-size: 20px;">👤</span>
+          <span style="color: #1e293b; font-size: 18px; font-weight: 700;">${techName}</span>
+          <span style="color: #64748b; font-size: 14px; margin-left: auto;">${techActivities.length} ativ.</span>
+        `
+        techContainer.appendChild(techHeader)
 
-        activitiesContainer.appendChild(item)
+        // Lista de atividades do técnico
+        const activitiesList = document.createElement('div')
+        activitiesList.style.cssText = 'display: flex; flex-direction: column; gap: 8px;'
+
+        techActivities.forEach((activity, index) => {
+          const item = document.createElement('div')
+          item.style.cssText = `
+            padding: 12px;
+            background: #ffffff;
+            border-radius: 6px;
+            border-left: 4px solid ${priorityColors[activity.priority]};
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          `
+
+          item.innerHTML = `
+            <div style="color: #0f172a; font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.3;">
+              ${index + 1}. ${activity.description}
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+              ${activity.estimatedTime > 0 ? `<span style="color: #475569; font-size: 12px;">⏱️ ${activity.estimatedTime}min</span>` : ''}
+              <span style="color: #ffffff; font-size: 11px; padding: 3px 8px; background: ${priorityColors[activity.priority]}; border-radius: 4px; font-weight: 600; text-transform: uppercase;">${getPriorityLabel(activity.priority)}</span>
+              <span style="color: #ffffff; font-size: 11px; padding: 3px 8px; background: ${statusColors[activity.status]}; border-radius: 4px; font-weight: 600; text-transform: uppercase;">${getStatusLabel(activity.status)}</span>
+            </div>
+          `
+
+          activitiesList.appendChild(item)
+        })
+
+        techContainer.appendChild(activitiesList)
+        mainContainer.appendChild(techContainer)
       })
 
       // Rodapé
