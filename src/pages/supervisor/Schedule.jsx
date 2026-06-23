@@ -407,30 +407,30 @@ export function Schedule() {
         </button>
       </div>
 
+      {/* Abas dos Setores */}
+      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+        {sectors.map(sector => {
+          const Icon = sectorIcons[sector] || Settings
+          const isActive = activeSector === sector
+          return (
+            <button
+              key={sector}
+              onClick={() => setActiveSector(sector)}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
+                isActive
+                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-700'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span className="text-sm sm:text-base">{sector}</span>
+            </button>
+          )
+        })}
+      </div>
+
       {activeTab === 'schedule' ? (
         <>
-          {/* Abas dos Setores */}
-          <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-            {sectors.map(sector => {
-              const Icon = sectorIcons[sector] || Settings
-              const isActive = activeSector === sector
-              return (
-                <button
-                  key={sector}
-                  onClick={() => setActiveSector(sector)}
-                  className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg font-medium transition-all whitespace-nowrap ${
-                    isActive
-                      ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 border border-slate-700'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm sm:text-base">{sector}</span>
-                </button>
-              )
-            })}
-          </div>
-
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -764,8 +764,11 @@ Manutenção preventiva...`}
           {/* Cabeçalho de Modelos */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-orange-500" />
-              <h2 className="text-lg font-semibold text-slate-200">Modelos de Atividades</h2>
+              {activeSector && (() => {
+                const Icon = sectorIcons[activeSector] || Settings
+                return <Icon className="w-5 h-5 text-orange-500" />
+              })()}
+              <h2 className="text-lg font-semibold text-slate-200">Modelos - {activeSector}</h2>
             </div>
             <Button onClick={() => setShowModelForm(true)} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
@@ -774,17 +777,17 @@ Manutenção preventiva...`}
           </div>
 
           {/* Lista de Modelos */}
-          {models.length === 0 ? (
+          {models.filter(m => m.sector === activeSector).length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <Layers className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 mb-2">Nenhum modelo criado ainda</p>
+                <p className="text-slate-400 mb-2">Nenhum modelo criado para {activeSector}</p>
                 <p className="text-sm text-slate-500">Crie modelos para facilitar programações recorrentes</p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid gap-4">
-              {models.map(model => (
+              {models.filter(m => m.sector === activeSector).map(model => (
                 <Card key={model.id} className="hover:border-orange-500/30 transition-colors">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
